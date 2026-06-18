@@ -261,8 +261,8 @@ exec {sys.executable} "$@"
             content = f.read()
             
         # Check lines for VID/PID spoofing are commented out
-        self.assertIn(";board_build.arduino.earlephilhower.usb_vid = 0x256F", content)
-        self.assertIn(";board_build.arduino.earlephilhower.usb_pid = 0xC635", content)
+        self.assertIn(";board_build.arduino.earlephilhower.usb_vid = 0xXXXX", content)
+        self.assertIn(";board_build.arduino.earlephilhower.usb_pid = 0xYYYY", content)
 
 if __name__ == "__main__":
     unittest.main()

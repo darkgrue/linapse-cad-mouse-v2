@@ -10,7 +10,7 @@ echo
 
 # USB device — set USB_ID to the VID:PID you flashed (the SpaceMouse you emulate),
 # e.g. export USB_ID=xxxx:yyyy
-USB_ID="${USB_ID:-256f:c635}"
+USB_ID="${USB_ID:-xxxx:yyyy}"
 if lsusb | grep -qi "$USB_ID"; then
     ok "device" "connected"
 else
