@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.7] - 2026-06-18
+
+### Fixed
+- **CI/CD Multi-Distro Workflow**: Switched Debian container image to use stable version tag `12` where `ydotool` is packaged, and configured `pytest` step inside Docker containers to pass `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS` so that systemd user bus connections succeed.
+
 ## [2.2.6] - 2026-06-18
 
 ### Added

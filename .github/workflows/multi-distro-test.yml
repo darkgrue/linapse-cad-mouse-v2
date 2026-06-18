@@ -16,7 +16,7 @@ jobs:
           - distro: ubuntu
             image: jrei/systemd-ubuntu:latest
           - distro: debian
-            image: jrei/systemd-debian:latest
+            image: jrei/systemd-debian:12
           - distro: fedora
             image: jrei/systemd-fedora:latest
 
@@ -68,7 +68,8 @@ jobs:
 
       - name: Run pytest suite inside container
         run: |
-          docker exec systemd-container sh -c "cd /workspace && pytest linux/"
+          docker exec -e XDG_RUNTIME_DIR=/run/user/0 -e DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/0/bus \
+            systemd-container sh -c "cd /workspace && pytest linux/"
 
       - name: Save job status
         if: always()
