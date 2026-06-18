@@ -152,6 +152,8 @@ cat <<EOF
 ######## Done
 
   Configurator:  http://localhost:$PORT   (see docs/USAGE.md)
+  You must log out and back in (or reboot) to apply the systemd environment socket configuration for native applications.
   If buttons don't work, log out and back in so the 'input' group takes effect.
   If the device was plugged in before install, unplug and replug it.
 EOF
+

@@ -45,7 +45,14 @@ class TestInstallerMock(unittest.TestCase):
         # Write mock commands
         self.write_mock_bin("sudo", """#!/bin/bash
 echo "SUDO: $*" >> {log_path}
+if [[ "$*" == *"cp "* && "$*" == *"/etc/"* ]]; then
+    exit 0
+fi
 exec "$@"
+""")
+        self.write_mock_bin("udevadm", """#!/bin/bash
+echo "UDEVADM: $*" >> {log_path}
+exit 0
 """)
         self.write_mock_bin("pacman", """#!/bin/bash
 echo "PACMAN: $*" >> {log_path}
@@ -171,11 +178,17 @@ exec {sys.executable} "$@"
         self.assertFalse(disable_called, "Should not attempt to disable spacenavd if it is not installed")
         self.assertFalse(remove_called, "Should not attempt to uninstall spacenavd if it is not installed")
 
-        # 2. Verify that no copy operations to /etc/spnavrc or /etc/udev were attempted
+        # 2. Verify that copy operations to /etc/udev were attempted and udevadm was called
+        has_udev_copy = any("cp" in c and "99-spacemouse.rules" in c and "/etc/udev" in c for c in commands)
+        has_udevadm_reload = any("udevadm" in c and "control" in c and "reload-rules" in c for c in commands)
+        has_udevadm_trigger = any("udevadm" in c and "trigger" in c for c in commands)
+
+        self.assertTrue(has_udev_copy, "Should copy 99-spacemouse.rules to /etc/udev")
+        self.assertTrue(has_udevadm_reload, "Should reload udev rules")
+        self.assertTrue(has_udevadm_trigger, "Should trigger udev rules")
+
         for cmd in commands:
             self.assertNotIn("spnavrc", cmd.lower(), "Should not access spnavrc in system directories")
-            self.assertNotIn("99-spacemouse.rules", cmd.lower(), "Should not copy 99-spacemouse.rules")
-            self.assertNotIn("udevadm", cmd.lower(), "Should not call udevadm")
 
         # 3. Verify user files are copied and patched
         self.verify_installation_artifacts()
@@ -192,11 +205,17 @@ exec {sys.executable} "$@"
         self.assertTrue(disable_called, "Should disable spacenavd if it is installed")
         self.assertTrue(remove_called, "Should uninstall spacenavd if it is installed")
 
-        # 2. Verify that no copy operations to /etc/spnavrc or /etc/udev were attempted
+        # 2. Verify that copy operations to /etc/udev were attempted and udevadm was called
+        has_udev_copy = any("cp" in c and "99-spacemouse.rules" in c and "/etc/udev" in c for c in commands)
+        has_udevadm_reload = any("udevadm" in c and "control" in c and "reload-rules" in c for c in commands)
+        has_udevadm_trigger = any("udevadm" in c and "trigger" in c for c in commands)
+
+        self.assertTrue(has_udev_copy, "Should copy 99-spacemouse.rules to /etc/udev")
+        self.assertTrue(has_udevadm_reload, "Should reload udev rules")
+        self.assertTrue(has_udevadm_trigger, "Should trigger udev rules")
+
         for cmd in commands:
             self.assertNotIn("spnavrc", cmd.lower(), "Should not access spnavrc in system directories")
-            self.assertNotIn("99-spacemouse.rules", cmd.lower(), "Should not copy 99-spacemouse.rules")
-            self.assertNotIn("udevadm", cmd.lower(), "Should not call udevadm")
 
         # 3. Verify user files are copied and patched
         self.verify_installation_artifacts()
@@ -210,6 +229,13 @@ exec {sys.executable} "$@"
         systemd_user_dir = self.mock_home / ".config" / "systemd" / "user"
         for svc in ["ydotoold.service", "spacenav-ws.service", "linapse-service.service", "linapse-configurator.service"]:
             self.assertTrue((systemd_user_dir / svc).exists(), f"systemd user service {svc} should exist")
+
+        # Verify environment.d configuration
+        env_conf_path = self.mock_home / ".config" / "environment.d" / "99-spnav.conf"
+        self.assertTrue(env_conf_path.exists(), "environment.d config file should exist")
+        with open(env_conf_path) as f:
+            env_conf_content = f.read()
+        self.assertEqual(env_conf_content, 'SPNAV_SOCKET="/run/user/${UID}/spnav.sock"\n')
 
         # Verify spacenav-ws files were patched correctly
         with open(self.dummy_pkg_dir / "controller.py") as f:

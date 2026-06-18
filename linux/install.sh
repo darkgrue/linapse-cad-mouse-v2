@@ -105,6 +105,29 @@ python3 "$SCRIPT_DIR/patch-spacenav-ws.py"
 systemctl --user restart spacenav-ws || true
 
 
+# ── Environment Setup ────────────────────────────────────────────────────────
+section "Configuring user systemd environment for native applications"
+
+mkdir -p "$HOME/.config/environment.d"
+cat <<'EOF' > "$HOME/.config/environment.d/99-spnav.conf"
+SPNAV_SOCKET="/run/user/${UID}/spnav.sock"
+EOF
+info "Environment configuration file written to ~/.config/environment.d/99-spnav.conf"
+
+
+# ── udev rules ───────────────────────────────────────────────────────────────
+section "Installing udev rules for device permissions"
+
+if [ -f "$SCRIPT_DIR/udev/99-spacemouse.rules" ]; then
+    sudo cp "$SCRIPT_DIR/udev/99-spacemouse.rules" /etc/udev/rules.d/99-spacemouse.rules
+    info "Copied udev rules to /etc/udev/rules.d/"
+    sudo udevadm control --reload-rules 2>/dev/null || info "Warning: Could not reload udev rules"
+    sudo udevadm trigger --action=add 2>/dev/null || info "Warning: Could not trigger udev rules"
+else
+    err "udev rules file not found"
+fi
+
+
 # ── Done ─────────────────────────────────────────────────────────────────────
 section "Done!"
 cat <<'EOF'
@@ -116,5 +139,7 @@ Next steps:
   4. Move the CAD Mouse — the viewport should respond.
 
 If the mouse was already plugged in before installing, unplug and replug it.
+You must log out and back in (or reboot) to apply the systemd environment socket configuration for native applications.
 If buttons don't work, log out and back in (or reboot) so the 'input' group takes effect.
 EOF
+
