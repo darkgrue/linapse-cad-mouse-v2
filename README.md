@@ -13,6 +13,15 @@
 - **Addressable RGB lighting.** SK6812 LEDs with multiple effects (solid, breathing, motion-reactive, swirls) configured live.
 - **Linapse web configurator.** A browser UI to remap buttons/taps, design lighting, and tune the motion filter — with a live 3D Benchy viewport you can push around with the puck to feel sensitivity changes in real time.
 
+## The configurator
+
+A single static web app with three tabs, talking to `linapse-service` over WebSocket and writing changes to the device live. Full walkthrough: **[docs/USAGE.md](docs/USAGE.md)**.
+
+| Customize | Lighting | Sensitivity |
+|-----------|----------|-------------|
+| [![Customize tab](docs/images/configurator-customize.png)](docs/images/configurator-customize.png) | [![Lighting tab](docs/images/configurator-lighting.png)](docs/images/configurator-lighting.png) | [![Sensitivity tab](docs/images/configurator-sensitivity.png)](docs/images/configurator-sensitivity.png) |
+| Remap the 2 buttons, the chord, and 5 cap-tap zones to keys, clicks, scrolls, commands, or macros. | Drive the SK6812 ring — solid, breathing, motion-reactive, swirl, gradient, rainbow — with live color and brightness. | Tune dead zones, the Kalman filter, and the response curve against a live 3D Benchy you push with the puck. |
+
 ## Architecture
 
 ```
@@ -93,7 +102,7 @@ python3 -m http.server 7890
 # then open http://localhost:7890
 ```
 
-It connects to `linapse-service` at `ws://localhost:13000`. From there you can remap buttons and taps, design lighting, and tune the motion filter against the live 3D test viewport.
+It connects to `linapse-service` at `ws://localhost:13000`. From there you can remap buttons and taps, design lighting, and tune the motion filter against the live 3D test viewport. See **[docs/USAGE.md](docs/USAGE.md)** for a tab-by-tab walkthrough.
 
 ## Tuning
 
