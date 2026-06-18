@@ -1,0 +1,342 @@
+#!/usr/bin/env python3
+"""
+Linapse service — serial + WebSocket bridge for CAD Mouse MK2.
+
+Owns /dev/ttyACM0, dispatches button/tap actions, and exposes
+ws://localhost:13000 for the Linapse configurator and other clients.
+
+Replaces spnav-buttons. Clients send the same commands as the raw serial
+protocol (e.g. "led color FF2400"), and receive serial responses back.
+TAP: events are also broadcast to all connected WebSocket clients.
+
+WebSocket protocol (text frames):
+  Client → server:  any firmware serial command, e.g. "led color FF2400"
+  Server → client:  firmware responses ("OK", "ERR ...") and events ("TAP:top:1")
+"""
+
+import asyncio
+import glob
+import json
+import os
+import select
+import serial
+import subprocess
+import threading
+import time
+from pathlib import Path
+
+try:
+    import websockets
+    import websockets.exceptions
+except ImportError:
+    raise SystemExit("websockets not installed — run: pip install --break-system-packages websockets")
+
+# ── Config ────────────────────────────────────────────────────────────────────
+
+ACTIONS_PATH    = Path.home() / ".config" / "cad-mouse" / "actions.json"
+YDOTOOL_SOCKET  = f"/run/user/{os.getuid()}/.ydotool_socket"
+WS_HOST         = "localhost"
+WS_PORT         = 13000
+SERIAL_BAUD     = 115200
+BUTTON_REPORT_ID = 3
+CHORD_WINDOW    = 0.05
+SCROLL_INTERVAL = 0.05
+
+DIR_MAP = {
+    "NegZ": "top", "NegX": "left", "PosX": "right",
+    "PosY": "front", "NegY": "back",
+}
+
+# ── Shared state ──────────────────────────────────────────────────────────────
+
+_loop: asyncio.AbstractEventLoop = None
+_ws_clients: set = set()
+_serial_queue: asyncio.Queue = None
+_ser_holder: list = [None]  # [serial.Serial | None]
+
+# ── Actions ───────────────────────────────────────────────────────────────────
+
+def load_actions():
+    try:
+        with open(ACTIONS_PATH) as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"[actions] {e}")
+        return {"button_override": False, "buttons": {}, "taps": {}}
+
+def ydotool(*args):
+    env = os.environ.copy()
+    env["YDOTOOL_SOCKET"] = YDOTOOL_SOCKET
+    subprocess.run(["ydotool"] + list(args), env=env, capture_output=True)
+
+_MOUSE_BTN = {"left": 0x40001, "right": 0x40002, "middle": 0x40003}
+
+def dispatch(action_obj):
+    if not action_obj:
+        return
+    act = action_obj.get("action", "none")
+    if act == "none":
+        pass
+    elif act == "key":
+        val = action_obj.get("value", "")
+        if val:
+            ydotool("key", val)
+    elif act == "mouse_click":
+        code = _MOUSE_BTN.get(action_obj.get("button", "left"), 0x40001)
+        ydotool("click", hex(code))
+    elif act == "mouse_scroll":
+        d = action_obj.get("direction", "down")
+        a = int(action_obj.get("amount", 3))
+        delta = (-a if d == "up" else a) if d in ("up", "down") else (-a if d == "left" else a)
+        if d in ("up", "down"):
+            ydotool("mousemove", "-w", "--", "0", str(delta))
+        else:
+            ydotool("mousemove", "-w", "--", str(delta), "0")
+    elif act == "mouse_move":
+        ydotool("mousemove", "--", str(action_obj.get("x", 0)), str(action_obj.get("y", 0)))
+    elif act in ("scroll_up", "scroll_down"):
+        ydotool("mousemove", "-w", "--", "0", str(-3 if act == "scroll_up" else 3))
+    elif act == "exec":
+        val = action_obj.get("value", "")
+        if val:
+            subprocess.Popen(val, shell=True)
+    elif act == "macro":
+        for step in action_obj.get("steps", []):
+            if "delay" in step:
+                time.sleep(step["delay"] / 1000.0)
+            else:
+                dispatch(step)
+
+# ── Button handler ────────────────────────────────────────────────────────────
+
+_held = set()
+_chord_fired = False
+_timers = {}
+_scroll_threads = {}
+
+def _scroll_loop(btn, stop_event, actions):
+    act = actions.get("buttons", {}).get(str(btn), {"action": "scroll_down" if btn == 0 else "scroll_up"})
+    while not stop_event.is_set():
+        dispatch(act)
+        time.sleep(SCROLL_INTERVAL)
+
+def _on_single(btn, actions):
+    if _chord_fired:
+        return
+    if actions.get("button_override", False):
+        return
+    act = actions.get("buttons", {}).get(str(btn), {"action": "scroll_down" if btn == 0 else "scroll_up"})
+    if act.get("action") in ("scroll_up", "scroll_down"):
+        stop_event = threading.Event()
+        t = threading.Thread(target=_scroll_loop, args=(btn, stop_event, actions), daemon=True)
+        _scroll_threads[btn] = (t, stop_event)
+        t.start()
+    else:
+        dispatch(act)
+
+def _on_chord(actions):
+    act = actions.get("buttons", {}).get("chord", {"action": "key", "value": "shift+7"})
+    dispatch(act)
+
+def _on_press(btn, actions):
+    global _chord_fired
+    _held.add(btn)
+    if len(_held) == 2:
+        _chord_fired = True
+        for t in _timers.values():
+            t.cancel()
+        _timers.clear()
+        _on_chord(actions)
+        return
+    t = threading.Timer(CHORD_WINDOW, _on_single, args=[btn, actions])
+    _timers[btn] = t
+    t.start()
+
+def _on_release(btn):
+    global _chord_fired
+    _held.discard(btn)
+    if btn in _timers:
+        _timers.pop(btn).cancel()
+    if btn in _scroll_threads:
+        _, stop_event = _scroll_threads.pop(btn)
+        stop_event.set()
+    if not _held:
+        _chord_fired = False
+
+# ── Broadcast helper (thread-safe) ────────────────────────────────────────────
+
+def _broadcast_from_thread(msg: str):
+    if _loop:
+        asyncio.run_coroutine_threadsafe(_broadcast(msg), _loop)
+
+async def _broadcast(msg: str):
+    dead = set()
+    for ws in list(_ws_clients):
+        try:
+            await ws.send(msg)
+        except Exception:
+            dead.add(ws)
+    _ws_clients.difference_update(dead)
+
+# ── HID thread ────────────────────────────────────────────────────────────────
+
+def hid_thread(actions_ref):
+    candidates = (
+        glob.glob("/dev/input/by-id/usb-*CAD_Mouse*-if02-hidraw") +
+        glob.glob("/dev/input/by-id/usb-Seeed_Studio*-if02-hidraw")
+    )
+    if not candidates:
+        print("[hid] hidraw not found — button dispatch disabled")
+        return
+    fd = open(candidates[0], "rb")
+    os.set_blocking(fd.fileno(), False)
+    prev_bits = 0
+    print(f"[hid] watching {fd.name}")
+    while True:
+        r, _, _ = select.select([fd], [], [], 1)
+        if not r:
+            continue
+        data = fd.read(64)
+        if not data or data[0] != BUTTON_REPORT_ID:
+            continue
+        bits = data[1] & 0x03
+        if bits == prev_bits:
+            continue
+        for btn in range(2):
+            mask = 1 << btn
+            was = bool(prev_bits & mask)
+            now = bool(bits & mask)
+            if now and not was:
+                _on_press(btn, actions_ref[0])
+            elif was and not now:
+                _on_release(btn)
+        prev_bits = bits
+
+# ── Serial thread ─────────────────────────────────────────────────────────────
+
+def find_serial():
+    m = (glob.glob("/dev/serial/by-id/usb-Seeed_Studio_CAD_Mouse*") +
+         glob.glob("/dev/ttyACM*"))
+    return m[0] if m else None
+
+def serial_thread(actions_ref):
+    port = find_serial()
+    if not port:
+        print("[serial] no serial port found — retrying in 5s")
+        while True:
+            time.sleep(5)
+            port = find_serial()
+            if port:
+                break
+    while True:
+        try:
+            ser = serial.Serial(port, SERIAL_BAUD, timeout=1.0)
+            _ser_holder[0] = ser
+            print(f"[serial] connected to {port}")
+            while True:
+                line = ser.readline().decode(errors="replace").strip()
+                if not line:
+                    continue
+                if line.startswith("TAP:"):
+                    parts = line.split(":")
+                    if len(parts) == 3:
+                        _, fw_dir, count_str = parts
+                        human = DIR_MAP.get(fw_dir)
+                        if human:
+                            key = f"{human}:{count_str}"
+                            act = actions_ref[0].get("taps", {}).get(key)
+                            if act:
+                                print(f"[tap] {key} → {act}")
+                                dispatch(act)
+                            _broadcast_from_thread(f"TAP:{human}:{count_str}")
+                elif line.startswith(">MOTION:"):
+                    _broadcast_from_thread(line[1:])  # strip '>' → MOTION:...
+                elif not line.startswith(">"):
+                    # Command response (OK, ERR ..., JSON from config get, etc.)
+                    _broadcast_from_thread(line)
+        except serial.SerialException as e:
+            _ser_holder[0] = None
+            print(f"[serial] {e} — retrying in 3s")
+            time.sleep(3)
+
+# ── Config watcher ────────────────────────────────────────────────────────────
+
+def config_watcher(actions_ref):
+    last_mtime = 0
+    while True:
+        try:
+            mtime = ACTIONS_PATH.stat().st_mtime
+            if mtime != last_mtime:
+                last_mtime = mtime
+                actions_ref[0] = load_actions()
+                print(f"[config] reloaded {ACTIONS_PATH}")
+        except FileNotFoundError:
+            pass
+        time.sleep(2)
+
+# ── Serial writer (asyncio) ───────────────────────────────────────────────────
+
+async def serial_writer():
+    while True:
+        cmd = await _serial_queue.get()
+        ser = _ser_holder[0]
+        if ser:
+            try:
+                ser.write((cmd.strip() + "\n").encode())
+            except Exception as e:
+                print(f"[serial] write error: {e}")
+        _serial_queue.task_done()
+
+# ── WebSocket handler ─────────────────────────────────────────────────────────
+
+def _save_actions(json_str, actions_ref):
+    try:
+        data = json.loads(json_str)
+        ACTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(ACTIONS_PATH, "w") as f:
+            json.dump(data, f, indent=2)
+        actions_ref[0] = data
+        print(f"[config] saved {ACTIONS_PATH}")
+        return True
+    except Exception as e:
+        print(f"[config] save error: {e}")
+        return False
+
+async def ws_handler(websocket, actions_ref):
+    _ws_clients.add(websocket)
+    print(f"[ws] client connected ({len(_ws_clients)} total)")
+    try:
+        async for message in websocket:
+            if message.startswith("actions "):
+                ok = _save_actions(message[8:], actions_ref)
+                await websocket.send("OK actions saved" if ok else "ERR actions save failed")
+            else:
+                await _serial_queue.put(message)
+    except websockets.exceptions.ConnectionClosed:
+        pass
+    finally:
+        _ws_clients.discard(websocket)
+        print(f"[ws] client disconnected ({len(_ws_clients)} total)")
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+
+async def main():
+    global _loop, _serial_queue
+    _loop = asyncio.get_running_loop()
+    _serial_queue = asyncio.Queue()
+
+    actions_ref = [load_actions()]
+
+    threading.Thread(target=serial_thread,  args=(actions_ref,), daemon=True).start()
+    threading.Thread(target=hid_thread,     args=(actions_ref,), daemon=True).start()
+    threading.Thread(target=config_watcher, args=(actions_ref,), daemon=True).start()
+
+    asyncio.create_task(serial_writer())
+
+    handler = lambda ws: ws_handler(ws, actions_ref)
+    print(f"[ws] server starting on ws://{WS_HOST}:{WS_PORT}")
+    async with websockets.serve(handler, WS_HOST, WS_PORT):
+        await asyncio.Future()  # run forever
+
+if __name__ == "__main__":
+    asyncio.run(main())

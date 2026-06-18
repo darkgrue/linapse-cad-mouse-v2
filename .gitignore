@@ -1,0 +1,9 @@
+.pio
+.vscode
+.idea
+.DS_Store
+AGENTS.md
+.claude
+*.uf2
+__pycache__/
+*.pyc

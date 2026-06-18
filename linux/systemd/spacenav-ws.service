@@ -1,0 +1,11 @@
+[Unit]
+Description=SpaceNav WebSocket bridge for OnShape
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/env uvx spacenav-ws@latest serve
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

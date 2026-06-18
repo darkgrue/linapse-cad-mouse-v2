@@ -1,0 +1,8 @@
+# CAD Mouse MK2 — VID/PID spoofed as SpaceMouse Compact (XXXX:YYYY)
+# All restart logic is in restart-spacemouse-services (uses delayed systemd-run).
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="XXXX", ATTRS{idProduct}=="YYYY", \
+    RUN+="/usr/local/bin/restart-spacemouse-services"
+
+# Grant the 'input' group read access to the hidraw interface (for button mapping)
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="XXXX", ATTRS{idProduct}=="YYYY", \
+    MODE="0660", GROUP="input"
