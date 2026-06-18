@@ -21,7 +21,7 @@ The three tabs — **Customize**, **Lighting**, **Sensitivity** — run across t
 
 ## Customize — buttons & taps
 
-![Customize tab](images/configurator-customize.png)
+![Customize tab](images/configurator-customize-tap.png)
 
 The 3D device is annotated with every input zone. Click a callout to open its action panel on the right.
 
