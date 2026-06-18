@@ -16,7 +16,7 @@ jobs:
           - distro: ubuntu
             image: jrei/systemd-ubuntu:latest
           - distro: debian
-            image: jrei/systemd-debian:stable
+            image: jrei/systemd-debian:latest
           - distro: fedora
             image: jrei/systemd-fedora:latest
 
@@ -40,6 +40,7 @@ jobs:
         run: |
           sleep 5
           docker exec systemd-container systemctl is-system-running || true
+          docker exec systemd-container systemctl start dbus || true
 
       - name: Enable linger for root user
         run: |

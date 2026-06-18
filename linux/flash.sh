@@ -5,6 +5,7 @@
 #
 # Run from anywhere; paths are resolved relative to this script.
 set -e
+USER="${USER:-$(whoami)}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"

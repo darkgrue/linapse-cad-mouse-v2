@@ -2,6 +2,7 @@
 # CAD Mouse MK2 — Linux integration installer
 # Tested on Arch Linux (Wayland). Should work on any systemd distro.
 set -e
+USER="${USER:-$(whoami)}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USER_BIN="$HOME/.local/bin"

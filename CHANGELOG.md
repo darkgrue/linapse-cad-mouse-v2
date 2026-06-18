@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.9] - 2026-06-18
+
+### Fixed
+- **CI/CD**: Fixed multiple distro container test jobs by switching debian image tag from `stable` to `latest`, starting `dbus` before running `loginctl`, and resolving the empty `$USER` variable issue when running `setup.sh`/`install.sh` non-interactively in docker.
+
 ## [2.1.8] - 2026-06-18
 
 ### Removed
