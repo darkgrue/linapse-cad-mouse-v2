@@ -14,12 +14,8 @@ Guide on how to configure and verify 6DoF motion for various 3D, CAD, and game e
 | **Substance 3D Painter** | Native Linux | Fully Supported | UNIX Socket (`libspnav`) |
 | **OnShape** | Browser/Web | Fully Supported | Userscript + `spacenav-ws` proxy |
 | **SketchUp Web** | Browser/Web | Fully Supported | Userscript + `spacenav-ws` proxy |
-| **TinkerCAD** | Browser/Web | Community Alt | Gamepad/WebHID mapping |
 | **Unreal Engine** | Game Engine | Community Plugin | `OpenUnrealSpaceMouse` plugin |
 | **Unity** | Game Engine | Custom Package | Raw HID / Custom input scripts |
-| **ZBrush** | Wine / Proton | Wine Only | Experimental socket wrapper / hotkeys |
-| **3ds Max** | Wine / Proton | Wine Only | Experimental socket wrapper / hotkeys |
-| **Twinmotion** | Wine / Proton | Wine Only | Experimental HID passthrough / hotkeys |
 
 ---
 
@@ -92,10 +88,6 @@ Web applications run in sandboxed browsers and cannot read the UNIX socket. They
 #### SketchUp Web
 - Open a design on `https://sketchup.com` or `https://app.sketchup.com`. Spoofing activates connection to WebSocket proxy.
 
-#### TinkerCAD
-- **No official support**.
-- Workaround: Use gamepad emulator tools (e.g., `xboxdrv` or a custom browser extension) to map the device to standard mouse/joystick inputs.
-
 ---
 
 ## Game Engines
@@ -112,15 +104,3 @@ Game engines require plugin-based integrations.
 1. The Linapse installer sets up udev rules that grant user-read access to `/dev/hidraw*`.
 2. Use a C# Unity package (e.g. `Unity-SpaceMouse`) to read raw HID reports.
 3. Map HID axes to camera control scripts in your project.
-
----
-
-## Wine / Proton (Unsupported)
-
-Applications running under Wine do not support native UNIX sockets natively.
-
-#### ZBrush / 3ds Max / Twinmotion
-- **Wine Only**: No native support.
-- *Option 1*: Use `wine-spacenavd` socket wrapper to forward the UNIX socket events into Wine.
-- *Option 2*: Use raw USB/HID device forwarding in Wine/Proton.
-- *Option 3*: Configure custom profiles in the Linapse configurator to map puck movements to hotkeys or mouse clicks.
