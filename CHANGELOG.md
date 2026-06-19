@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.3] - 2026-06-19
+
+### Fixed
+- **3D Benchy Initial Profile Setup**: Excluded live device inversions from the initial layout pass rotation in the web configurator. This prevents the 3D Benchy model from loading upside down when rotation inversions (such as `rx` or `rz`) are enabled by default.
+
 ## [2.6.2] - 2026-06-19
 
 ### Fixed

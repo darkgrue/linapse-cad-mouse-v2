@@ -1,6 +1,6 @@
 [Setup]
 AppName=Linapse CAD Mouse Service
-AppVersion=2.6.2
+AppVersion=2.6.3
 DefaultDirName={autopf}\LinapseCADMouse
 DefaultGroupName=Linapse CAD Mouse
 OutputDir=.
