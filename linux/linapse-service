@@ -56,7 +56,7 @@ except ImportError:
 # ── Config ────────────────────────────────────────────────────────────────────
 
 ACTIONS_PATH    = Path.home() / ".config" / "cad-mouse" / "actions.json"
-YDOTOOL_SOCKET  = f"/run/user/{os.getuid()}/.ydotool_socket"
+YDOTOOL_SOCKET  = f"/run/user/{os.getuid()}/.ydotool_socket" if hasattr(os, "getuid") else ""
 WS_HOST         = "localhost"
 WS_PORT         = 13000
 SERIAL_BAUD     = 115200

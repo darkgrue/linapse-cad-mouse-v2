@@ -107,7 +107,7 @@ exec {sys.executable} "$@"
         # It must NOT contain the expanded custom path
         self.assertNotIn(custom_runtime_dir, content)
 
-    @unittest.skipIf(os.geteuid() == 0, "Cannot run write-prevention tests as root")
+    @unittest.skipIf(getattr(os, "geteuid", lambda: -1)() == 0, "Cannot run write-prevention tests as root")
     def test_install_fails_when_directory_is_unwritable(self):
         # Create directory and make it read-only
         env_d_dir = self.mock_home / ".config" / "environment.d"
