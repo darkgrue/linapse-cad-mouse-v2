@@ -2,13 +2,18 @@ import os
 import sys
 import time
 import socket
+import queue
+import json
 import asyncio
 import threading
 import http.server
 import socketserver
-import websockets
+import importlib.util
+import glob
+import subprocess
 import pytest
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 try:
     from playwright.sync_api import sync_playwright
@@ -18,6 +23,71 @@ except ImportError:
 
 # Skip if playwright is not installed
 pytestmark = pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
+
+# Global variables for tracking and controlling background threads
+started_threads = []
+original_init = threading.Thread.__init__
+original_sleep = time.sleep
+original_glob = glob.glob
+original_popen = subprocess.Popen
+original_excepthook = threading.excepthook
+
+teardown_initiated = False
+ydotool_calls = []
+
+class KillThreadException(BaseException):
+    """Custom exception to cleanly terminate background daemon threads."""
+    pass
+
+def custom_init(self, *args, **kwargs):
+    is_ours = False
+    target = kwargs.get("target")
+    if target:
+        name = getattr(target, "__name__", "")
+        if name in ("serial_thread", "hid_thread", "config_watcher", "_scroll_loop", "_on_single"):
+            is_ours = True
+    elif isinstance(self, threading.Timer) or self.__class__.__name__ == "Timer":
+        is_ours = True
+    if is_ours:
+        started_threads.append(self)
+    original_init(self, *args, **kwargs)
+
+def custom_sleep(seconds):
+    if teardown_initiated and threading.current_thread() != threading.main_thread():
+        raise KillThreadException("teardown active")
+    # Speed up service loops by mapping long sleeps to a minimal duration
+    if seconds in (2, 3, 5):
+        original_sleep(0.01)
+    else:
+        original_sleep(seconds)
+
+def custom_glob(pattern, *args, **kwargs):
+    if teardown_initiated and threading.current_thread() != threading.main_thread():
+        raise KillThreadException("teardown active")
+    return []
+
+def mock_popen(args, *args_etc, **kwargs):
+    if teardown_initiated and threading.current_thread() != threading.main_thread():
+        raise KillThreadException("teardown active")
+    if isinstance(args, list) and args[0] == "ydotool":
+        ydotool_calls.append(args)
+        proc = MagicMock()
+        proc.poll.return_value = 0
+        proc.wait.return_value = 0
+        return proc
+    if kwargs.get("shell") and isinstance(args, str):
+        ydotool_calls.append(["shell_exec", args])
+        proc = MagicMock()
+        proc.poll.return_value = 0
+        proc.wait.return_value = 0
+        return proc
+    return original_popen(args, *args_etc, **kwargs)
+
+def custom_excepthook(args):
+    if args.exc_type == KillThreadException:
+        # Suppress traceback output for clean daemon shutdowns
+        return
+    original_excepthook(args)
 
 # Helper to find free ports
 def get_free_port():
@@ -34,8 +104,7 @@ class ThreadedHTTPServer:
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, directory=directory, **kwargs)
             def log_message(self, format, *args):
-                pass  # Suppress HTTP server output in test logs
-
+                pass
         socketserver.TCPServer.allow_reuse_address = True
         self.server = socketserver.TCPServer(("localhost", port), Handler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
@@ -47,53 +116,65 @@ class ThreadedHTTPServer:
         self.server.shutdown()
         self.server.server_close()
 
-# Mock WebSocket Server
-class MockWSServer:
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-        self.server = None
-        self.clients = set()
-        self.loop = None
-        self.thread = None
+# Mock serial class
+class MockSerialPort:
+    def __init__(self, *args, **kwargs):
+        self.input_queue = queue.Queue()
+        self.is_open = True
+    def readline(self):
+        while not teardown_initiated and self.is_open:
+            try:
+                return self.input_queue.get(timeout=0.05)
+            except queue.Empty:
+                continue
+        raise KillThreadException("teardown active")
+    def write(self, data):
+        pass
+    def close(self):
+        self.is_open = False
 
-    def start(self):
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self._run_loop, daemon=True)
-        self.thread.start()
+# Load linapse-service
+if "linapse_service" in sys.modules:
+    linapse_service = sys.modules["linapse_service"]
+else:
+    service_path = Path(__file__).parent / "linapse-service"
+    loader = importlib.machinery.SourceFileLoader("linapse_service", str(service_path))
+    spec = importlib.util.spec_from_loader("linapse_service", loader)
+    linapse_service = importlib.util.module_from_spec(spec)
+    loader.exec_module(linapse_service)
+    sys.modules["linapse_service"] = linapse_service
 
-    def _run_loop(self):
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_until_complete(self._start_server())
-        self.loop.run_forever()
+def test_benchy_viewport_motion_and_toasts(tmp_path):
+    global teardown_initiated, started_threads, ydotool_calls
+    teardown_initiated = False
+    started_threads.clear()
+    ydotool_calls.clear()
 
-    async def _start_server(self):
-        self.server = await websockets.serve(self._handler, self.host, self.port)
+    # Setup temporary configuration path
+    temp_actions_path = tmp_path / "actions.json"
+    initial_actions = {
+        "current_mode": "Default",
+        "modes": {
+            "Default": {
+                "buttons": {
+                    "0": {"action": "mouse_click", "button": "left"}
+                },
+                "taps": {
+                    "top:1": {"action": "key", "value": "ctrl+alt+t"}
+                },
+                "led": {
+                    "effect": "solid",
+                    "color": "FFFFFF",
+                    "brightness": 128
+                }
+            }
+        },
+        "sensitivity": {},
+        "inversion": {}
+    }
+    with open(temp_actions_path, "w") as f:
+        json.dump(initial_actions, f)
 
-    async def _handler(self, ws):
-        self.clients.add(ws)
-        try:
-            async for msg in ws:
-                pass
-        except Exception:
-            pass
-        finally:
-            self.clients.discard(ws)
-
-    def broadcast(self, message):
-        asyncio.run_coroutine_threadsafe(self._broadcast(message), self.loop)
-
-    async def _broadcast(self, message):
-        if self.clients:
-            await asyncio.gather(*(c.send(message) for c in list(self.clients)), return_exceptions=True)
-
-    def stop(self):
-        if self.loop:
-            if self.server:
-                self.server.close()
-            self.loop.call_soon_threadsafe(self.loop.stop)
-
-def test_benchy_viewport_motion():
     # Setup directories
     linux_dir = Path(__file__).parent
     configurator_dir = linux_dir.parent / "configurator"
@@ -103,14 +184,63 @@ def test_benchy_viewport_motion():
     http_port = get_free_port()
     ws_port = get_free_port()
 
-    # Start HTTP and WS servers
+    # Configure linapse_service port & actions path
+    linapse_service.ACTIONS_PATH = temp_actions_path
+    linapse_service.WS_PORT = ws_port
+    linapse_service.WS_HOST = "localhost"
+
+    # Reset internal service lists
+    linapse_service._socket_clients.clear()
+    linapse_service._ws_clients.clear()
+    linapse_service._loop = None
+    linapse_service._held.clear()
+    linapse_service._chord_fired = False
+    linapse_service._timers.clear()
+    linapse_service._scroll_threads.clear()
+    linapse_service.reset_click_states()
+
+    # Instantiate mock serial
+    mock_serial = MockSerialPort()
+
+    # Setup patchers
+    patchers = [
+        patch("linapse_service.serial.Serial", return_value=mock_serial),
+        patch("linapse_service.find_serial", return_value="MOCK_COM"),
+        patch("linapse_service.glob.glob", custom_glob),
+        patch("linapse_service.subprocess.Popen", mock_popen),
+        patch("time.sleep", custom_sleep),
+    ]
+
+    for p in patchers:
+        p.start()
+
+    threading.Thread.__init__ = custom_init
+    threading.excepthook = custom_excepthook
+
+    # Start HTTP server
     http_server = ThreadedHTTPServer(http_port, str(configurator_dir))
     http_server.start()
 
-    ws_server = MockWSServer("localhost", ws_port)
-    ws_server.start()
+    # Run linapse-service inside a background thread
+    loop = asyncio.new_event_loop()
+    loop.add_signal_handler = lambda *args, **kwargs: None
+    def run_service():
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(linapse_service.main())
+        except Exception as e:
+            print(f"Service main failed: {e}")
 
-    # Wait for servers to spin up
+    service_thread = threading.Thread(target=run_service, daemon=True)
+    service_thread.start()
+
+    # Wait for service loop to start
+    start_time = time.time()
+    while linapse_service._loop is None and time.time() - start_time < 3.0:
+        time.sleep(0.1)
+    
+    assert linapse_service._loop is not None, "linapse-service failed to start"
+
     time.sleep(0.5)
 
     try:
@@ -118,7 +248,7 @@ def test_benchy_viewport_motion():
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
 
-            # Intercept and redirect WebSocket connection to our test port
+            # Redirect WebSocket connection to our custom port
             redirect_js = f"""
             const OriginalWebSocket = window.WebSocket;
             window.WebSocket = class extends OriginalWebSocket {{
@@ -130,7 +260,7 @@ def test_benchy_viewport_motion():
             """
             page.add_init_script(redirect_js)
 
-            # Load page
+            # Load configurator index
             page.goto(f"http://localhost:{http_port}/index.html")
 
             # Click the "Sensitivity" tab to load the Benchy viewport
@@ -155,14 +285,14 @@ def test_benchy_viewport_motion():
             def get_current():
                 return page.evaluate("() => { const b = benchyScene.benchy; return { x: b.position.x, y: b.position.y, rx: b.rotation.x, ry: b.rotation.y, rz: b.rotation.z }; }")
 
-            # Test X Translation (Left/Right)
-            ws_server.broadcast("MOTION:100,0,0,0,0,0")
-            time.sleep(0.2)
+            # Test X Translation (Left/Right) via serial input
+            mock_serial.input_queue.put(b">MOTION:100.0,0,0,0,0,0\n")
+            time.sleep(0.3)
             curr = get_current()
             assert curr['x'] > initial['x'], f"X translation (right) failed: expected > {initial['x']}, got {curr['x']}"
 
-            ws_server.broadcast("MOTION:-200,0,0,0,0,0")
-            time.sleep(0.2)
+            mock_serial.input_queue.put(b">MOTION:-200.0,0,0,0,0,0\n")
+            time.sleep(0.3)
             curr = get_current()
             assert curr['x'] < initial['x'], f"X translation (left) failed: expected < {initial['x']}, got {curr['x']}"
 
@@ -172,14 +302,14 @@ def test_benchy_viewport_motion():
 
             # Test Z Translation (Pull Up / Push Down on Z axis, maps to Y on screen)
             # Pull Up (negative Z value in motion, e.g. v[2] < 0) -> Benchy moves UP (y increases)
-            ws_server.broadcast("MOTION:0,0,-100,0,0,0")
-            time.sleep(0.2)
+            mock_serial.input_queue.put(b">MOTION:0,0,-100.0,0,0,0\n")
+            time.sleep(0.3)
             curr = get_current()
             assert curr['y'] > initial['y'], f"Z translation (Pull Up) failed: expected y > {initial['y']}, got {curr['y']}"
 
             # Push Down (positive Z value in motion, e.g. v[2] > 0) -> Benchy moves DOWN (y decreases)
-            ws_server.broadcast("MOTION:0,0,200,0,0,0")
-            time.sleep(0.2)
+            mock_serial.input_queue.put(b">MOTION:0,0,200.0,0,0,0\n")
+            time.sleep(0.3)
             curr = get_current()
             assert curr['y'] < initial['y'], f"Z translation (Push Down) failed: expected y < {initial['y']}, got {curr['y']}"
 
@@ -188,41 +318,60 @@ def test_benchy_viewport_motion():
             initial = get_current()
 
             # Test Pitch (RX Axis rotation)
-            ws_server.broadcast("MOTION:0,0,0,100,0,0")
-            time.sleep(0.2)
+            mock_serial.input_queue.put(b">MOTION:0,0,0,100.0,0,0\n")
+            time.sleep(0.3)
             curr = get_current()
             assert curr['rx'] > initial['rx'], f"RX Pitch failed: expected rx > {initial['rx']}, got {curr['rx']}"
 
             # Test Yaw (RY Axis rotation)
-            ws_server.broadcast("MOTION:0,0,0,0,100,0")
-            time.sleep(0.2)
+            mock_serial.input_queue.put(b">MOTION:0,0,0,0,100.0,0\n")
+            time.sleep(0.3)
             curr = get_current()
             assert curr['ry'] > initial['ry'], f"RY Yaw failed: expected ry > {initial['ry']}, got {curr['ry']}"
 
             # Test Roll (RZ Axis rotation)
             # v[5] > 0 -> rotation.z decreases
-            ws_server.broadcast("MOTION:0,0,0,0,0,100")
-            time.sleep(0.2)
+            mock_serial.input_queue.put(b">MOTION:0,0,0,0,0,100.0\n")
+            time.sleep(0.3)
             curr = get_current()
             assert curr['rz'] < initial['rz'], f"RZ Roll failed: expected rz < {initial['rz']}, got {curr['rz']}"
 
-            # Test Button Press Toast
-            ws_server.broadcast("BUTTON:0:1")
-            time.sleep(0.3)
-            toast_header = page.locator(".toast-header").first.text_content()
-            toast_body = page.locator(".toast-body").first.text_content()
-            assert "Button Pressed" in toast_header, f"Expected 'Button Pressed' in toast header, got '{toast_header}'"
-            assert "LEFT BUTTON" in toast_body, f"Expected 'LEFT BUTTON' in toast body, got '{toast_body}'"
-
-            # Test Tap Gesture Toast
-            ws_server.broadcast("TAP:top:1")
+            # Test Tap Gesture Toast via mock serial
+            # TAP:NegZ:1 maps to top tap, which is configured to key shortcut in initial_actions
+            mock_serial.input_queue.put(b"TAP:NegZ:1\n")
             time.sleep(0.3)
             tap_toast_header = page.locator(".toast-header").last.text_content()
             tap_toast_body = page.locator(".toast-body").last.text_content()
             assert "Tap Registered" in tap_toast_header, f"Expected 'Tap Registered' in toast header, got '{tap_toast_header}'"
             assert "TOP TAP (1X)" in tap_toast_body.upper(), f"Expected 'TOP TAP (1X)' in toast body, got '{tap_toast_body}'"
 
+            # Test Button Press Toast via daemon thread-safe broadcast
+            linapse_service._broadcast_from_thread("BUTTON:0:1")
+            time.sleep(0.3)
+            toast_header = page.locator(".toast-header").last.text_content()
+            toast_body = page.locator(".toast-body").last.text_content()
+            assert "Button Pressed" in toast_header, f"Expected 'Button Pressed' in toast header, got '{toast_header}'"
+            assert "LEFT BUTTON" in toast_body, f"Expected 'LEFT BUTTON' in toast body, got '{toast_body}'"
+
             browser.close()
     finally:
-        ws_server.stop()
+        # Teardown sequence
+        teardown_initiated = True
+
+        # Stop service
+        mock_serial.close()
+        loop.call_soon_threadsafe(loop.stop)
         http_server.stop()
+
+        # Join started daemon threads to ensure clean exit
+        for t in started_threads:
+            t.join(timeout=1.0)
+            assert not t.is_alive(), f"Thread {t} (name={t.name}) failed to exit during teardown!"
+
+        # Stop all patchers
+        for p in reversed(patchers):
+            p.stop()
+
+        # Restore excepthook
+        threading.Thread.__init__ = original_init
+        threading.excepthook = original_excepthook

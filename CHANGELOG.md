@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.7] - 2026-06-19
+
+### Added
+- **Installer Badges**: Added installer badges/shields to `README.md` for Windows (`LinapseServiceSetup.exe`) and macOS (`linapse-service.pkg`) that dynamically link to the latest release downloads.
+
+## [2.5.6] - 2026-06-19
+
+### Changed
+- **Documentation**: Updated `README.md` to document cross-platform compatibility for Windows, macOS, and Linux, and updated structural descriptions to reflect the multi-OS features.
+
+## [2.5.5] - 2026-06-19
+
+### Fixed
+- **Playwright Test Host Isolation**: Mocked `subprocess.Popen` in `linux/test_playwright_benchy.py` to prevent real commands (like `ydotool`) from executing on the host machine. This fixes the issue where running tests spawned an empty terminal window (via `ctrl+alt+t` keyboard emulation).
+- **Daemon Thread Teardown**: Implemented custom thread tracking and clean shutdown mechanism in the Playwright test suite to prevent background daemon threads (`serial_thread`, `config_watcher`, etc.) from leaking and polluting other tests in the suite.
+
 ## [2.5.4] - 2026-06-19
 
 ### Added

@@ -18,8 +18,8 @@ def main():
         print(f"Error: {readme_path} is not a file.")
         sys.exit(1)
 
-    # Distros we expect to test
-    distros = ["ubuntu", "debian", "fedora"]
+    # Distros/Platforms we expect to test
+    distros = ["ubuntu", "debian", "fedora", "windows", "macos"]
     status_map = {}
 
     for distro in distros:
@@ -38,7 +38,12 @@ def main():
     # Generate badges
     badge_parts = []
     for distro in distros:
-        label = distro.capitalize()
+        if distro == "macos":
+            label = "macOS"
+        elif distro == "windows":
+            label = "Windows"
+        else:
+            label = distro.capitalize()
         msg, color = status_map[distro]
         badge_url = f"https://img.shields.io/badge/{label}-{msg}-{color}"
         badge_parts.append(f"[![{label}]({badge_url})](#)")

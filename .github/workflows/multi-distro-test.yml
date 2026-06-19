@@ -85,7 +85,7 @@ jobs:
           path: results/${{ matrix.distro }}
 
   update-badges:
-    needs: test
+    needs: [test, build-windows, build-macos]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -170,6 +170,20 @@ jobs:
           name: LinapseServiceSetup
           path: LinapseServiceSetup.exe
 
+      - name: Save job status
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p results
+          echo "${{ job.status }}" > results/windows
+
+      - name: Upload status artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: status-windows
+          path: results/windows
+
   build-macos:
     runs-on: macos-latest
     steps:
@@ -231,4 +245,18 @@ jobs:
         with:
           name: linapse-service-pkg
           path: linapse-service.pkg
+
+      - name: Save job status
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p results
+          echo "${{ job.status }}" > results/macos
+
+      - name: Upload status artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: status-macos
+          path: results/macos
 

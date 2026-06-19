@@ -1,12 +1,15 @@
 # Linapse — CAD Mouse MK2 (v2)
 
 <!-- DISTRO_BADGES_START -->
-[![Ubuntu](https://img.shields.io/badge/Ubuntu-passing-success)](#) [![Debian](https://img.shields.io/badge/Debian-passing-success)](#) [![Fedora](https://img.shields.io/badge/Fedora-passing-success)](#)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-passing-success)](#) [![Debian](https://img.shields.io/badge/Debian-passing-success)](#) [![Fedora](https://img.shields.io/badge/Fedora-passing-success)](#) [![Windows](https://img.shields.io/badge/Windows-passing-success)](#) [![macOS](https://img.shields.io/badge/macOS-passing-success)](#)
 <!-- DISTRO_BADGES_END -->
 
-**Linapse** is a complete Linux software stack for the [CAD Mouse MK2](https://github.com/sb-ocr/cad-mouse-mk2) — a DIY 6-degrees-of-freedom "space mouse" that senses motion with three magnetic field sensors instead of optics. The hardware has no Linux driver from 3Dconnexion, so this project supplies everything needed to make it a first-class input device on Linux: device firmware, a host-side service, and a web configurator.
+[![Windows Setup](https://img.shields.io/badge/Windows-v2.5.7-0078D6?logo=windows&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe)
+[![macOS Package](https://img.shields.io/badge/macOS-v2.5.7-000000?logo=apple&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/linapse-service.pkg)
 
-> This is an independent software fork focused on Linux support and the Linapse configurator. It is **not** intended to be merged back upstream. Hardware design, enclosure, PCB, and BOM live in the [original project](https://github.com/sb-ocr/cad-mouse-mk2).
+**Linapse** is a cross-platform software stack (supporting Linux, Windows, and macOS) for the [CAD Mouse MK2](https://github.com/sb-ocr/cad-mouse-mk2) — a DIY 6-degrees-of-freedom "space mouse" that senses motion with three magnetic field sensors instead of optics. Since the hardware has no official drivers from 3Dconnexion, this project supplies everything needed to make it a first-class input device on Linux, Windows, and macOS: device firmware, a host-side service, and a web configurator.
+
+> This is an independent software fork focused on cross-platform support and the Linapse configurator. It is **not** intended to be merged back upstream. Hardware design, enclosure, PCB, and BOM live in the [original project](https://github.com/sb-ocr/cad-mouse-mk2).
 
 ---
 
@@ -18,17 +21,17 @@
 - Web GUI
 - Macros
 - 6DoF Motion Sensing
-- Wayland-Native Input Injection
+- Wayland-Native Input Injection (Linux) & OS-Native Input Injection (Windows/macOS)
 - Dynamic Tap Counts
 - Live 3D Viewport Tuning
 - Addressable RGB LED Control
-- Native Linux App Integrations
+- Native App Integrations (Linux, Windows, macOS)
 - Web CAD Connector
-- Multi-Distro Support
+- Multi-OS & Multi-Distro Support
 
 ## What it does
 
-- **6DoF motion in OnShape, SketchUp Web, and Native Linux apps.** Motion coordinates are decoded in firmware and sent via USB serial to `linapse-service`. The service processes the motion and exposes it through a user-space UNIX socket, eliminating the need for system-wide `spacenavd`. A WebSocket bridge plus a Tampermonkey userscript carry motion into browser apps (OnShape, SketchUp Web), while native apps (Blender, FreeCAD, OrcaSlicer, etc.) connect directly via the UNIX socket.
+- **6DoF motion in OnShape, SketchUp Web, and Native apps.** Motion coordinates are decoded in firmware and sent via USB serial to `linapse-service`. On Linux, the service processes the motion and exposes it through a user-space UNIX socket, eliminating the need for system-wide `spacenavd`, allowing native apps (Blender, FreeCAD, OrcaSlicer, etc.) to connect directly. On Windows and macOS, the service translates 6DoF motion and injects it as standard OS mouse/keyboard inputs via the `pynput` library. On all platforms, a WebSocket bridge plus a Tampermonkey userscript carry motion into browser apps (OnShape, SketchUp Web).
 - **Physical buttons, taps, and gestures.** The host service maps physical button clicks (including single click, double click, and multi-click actions), button chords, and cap-tap gestures to keystrokes, mouse events, custom shell commands, macros, or profile/mode switches.
 - **Configurable modes & input suppression.** In specialized modes like **Browser** and **Media**, standard 6DoF translation/rotation reports are suppressed. Browser Mode maps the puck's pitch rotation to web page scrolling and physical buttons to browser tab navigation. Media Mode maps puck pitch to system volume control, puck twist to scrubbing, and buttons to track navigation.
 - **Addressable RGB lighting.** SK6812 LEDs with multiple effects (solid, breathing, motion-reactive, swirls) configured live per-mode.
@@ -88,10 +91,12 @@ Tune dead zones, the Kalman filter, and the response curve against a live 3D Ben
 ```
 
 How the data flows:
-- **Motion** is decoded on the device, sent as raw 6DoF telemetry over **USB serial** to `linapse-service`. The service scales and inverts the coordinates according to user configuration, then writes them to the user-space UNIX socket at `/run/user/<uid>/spnav.sock`. Native applications read this socket directly, while `spacenav-ws` (running `linapse-ws-proxy`) bridges it to browser-based CAD applications.
-- **Buttons** are sent as HID report events over the USB HID interface, read by `linapse-service` via `hidraw`, and mapped to keystrokes/macros using `ydotool`.
-- **Taps and Gestures** are detected in firmware, sent over **USB serial** to `linapse-service`, and dispatched via `ydotool`.
+- **Motion** is decoded on the device, sent as raw 6DoF telemetry over **USB serial** to `linapse-service`. The service scales and inverts the coordinates according to user configuration. On Linux, it writes them to the user-space UNIX socket at `/run/user/<uid>/spnav.sock` where native applications read them directly. On Windows/macOS, it emulates mouse inputs directly using `pynput`.
+- **Buttons** are sent as HID report events over the USB HID interface (read via `hidraw` on Linux) or over the USB serial interface (on Windows/macOS), and mapped to keystrokes/macros using `ydotool` (Linux) or `pynput` (Windows/macOS).
+- **Taps and Gestures** are detected in firmware, sent over **USB serial** to `linapse-service`, and dispatched via `ydotool` (Linux) or `pynput` (Windows/macOS).
 - **Configuration** (sensitivity, deadzones, lighting patterns) flows bidirectionally over **USB serial** between `linapse-service` and the device, controlled via the WebSocket connection (`ws://localhost:13000`) from the Linapse web configurator.
+
+> **Note on Windows/macOS Architecture**: On Windows and macOS, UNIX sockets and udev/hidraw are not used. Button presses and motion telemetry are read entirely over the USB serial interface. Keyboard and mouse events are injected directly into the host OS using the cross-platform `pynput` library.
 
 ## Repository layout
 
@@ -99,16 +104,16 @@ How the data flows:
 |------|------------|
 | [`setup.sh`](setup.sh) | Top-level installer — packages, firmware (`--flash`), host integration, and configurator service. |
 | [`firmware/`](firmware/) | RP2040 firmware (PlatformIO). Motion decode, filtering, tap detection, LED engine, USB HID + serial protocol. See [firmware/README.md](firmware/README.md) and [firmware/LED_COLOR_CONFIG.md](firmware/LED_COLOR_CONFIG.md). |
-| [`linux/`](linux/) | Host-side integration: `install.sh`, `linapse-service` (serial ↔ WebSocket bridge), `spacenav-ws` patch, udev rules, systemd user units, OnShape userscript, tap calibration tools. See [linux/README.md](linux/README.md). |
+| [`linux/`](linux/) | Cross-platform host-side daemon and integration: `install.sh` (Linux), `linapse-service` (core service running on Linux, Windows, macOS), udev rules/systemd (Linux), userscripts, calibration tools. See [linux/README.md](linux/README.md). |
 | [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md) | Application integrations guide — how to setup, configure and verify all 14 supported and unsupported applications. |
 | [`configurator/`](configurator/) | Linapse web configurator — a static web app (Three.js 3D viewport) that talks to `linapse-service` over WebSocket. |
 | [`platformio.ini`](platformio.ini) | Firmware build configuration. |
 
 ## Quick start
 
-### One-step setup
+### One-step setup (Linux)
 
-The top-level [`setup.sh`](setup.sh) orchestrates the whole stack: it installs the distro packages (`ydotool`, `uv`), disables and uninstalls `spacenavd` (since `linapse-service` replaces it), runs the host integration, and installs a systemd user service that serves the configurator.
+The top-level [`setup.sh`](setup.sh) orchestrates the whole Linux stack: it installs the distro packages (`ydotool`, `uv`), disables and uninstalls `spacenavd` (since `linapse-service` replaces it), runs the host integration, and installs a systemd user service that serves the configurator.
 
 ```bash
 ./setup.sh                 # packages + host integration + configurator service
@@ -116,6 +121,18 @@ The top-level [`setup.sh`](setup.sh) orchestrates the whole stack: it installs t
 ./setup.sh --port 7890     # configurator port (default 7890)
 ./setup.sh --yes           # don't prompt before installing packages
 ```
+
+### Windows & macOS installation
+
+For Windows and macOS, pre-compiled service packages and installers are automatically generated via CI/CD pipelines:
+- **Windows**: Download and run the `LinapseServiceSetup.exe` installer. It sets up `linapse-service` as a background startup daemon.
+- **macOS**: Download and run the `linapse-service.pkg` installer package. It configures a `launchd` service at `/Library/LaunchAgents` to run the daemon on startup.
+- **Manual startup (Python)**:
+  If you prefer running from source:
+  ```bash
+  pip install websockets pyserial pynput hidapi
+  python linux/linapse-service
+  ```
 
 It still leaves two inherently hands-on steps to you: flashing the firmware (the RP2040 must be physically put into BOOTSEL mode — `--flash` walks you through it) and installing the Tampermonkey userscript (browser extensions can't be scripted). The manual breakdown below documents each piece if you'd rather run them yourself.
 
