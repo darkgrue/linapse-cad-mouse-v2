@@ -304,7 +304,7 @@ from pathlib import Path
 import importlib.util
 from importlib.machinery import SourceFileLoader
 
-service_path = Path("linux/linapse-service")
+service_path = Path("service/linapse-service")
 
 # Subclass PosixPath to intercept spnav.sock
 PosixPath = type(Path())
@@ -392,7 +392,7 @@ from pathlib import Path
 import importlib.util
 from importlib.machinery import SourceFileLoader
 
-service_path = Path("linux/linapse-service")
+service_path = Path("service/linapse-service")
 
 # Subclass PosixPath to intercept spnav.sock
 PosixPath = type(Path())

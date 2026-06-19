@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.12] - 2026-06-19
+
+### Changed
+- **Renamed Folder**: Renamed `linux/` directory to `service/` to correctly reflect its cross-platform support and updated all internal and external references.
+
 ## [2.6.11] - 2026-06-19
 
 ### Added

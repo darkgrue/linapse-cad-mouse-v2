@@ -8,8 +8,8 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-passing-success)](#) [![Debian](https://img.shields.io/badge/Debian-passing-success)](#) [![Fedora](https://img.shields.io/badge/Fedora-passing-success)](#) [![Windows](https://img.shields.io/badge/Windows-passing-success)](#) [![macOS](https://img.shields.io/badge/macOS-passing-success)](#)
 <!-- DISTRO_BADGES_END -->
 
-[![Windows Setup](https://img.shields.io/badge/Windows-v2.6.11-0078D6?logo=windows&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe)
-[![macOS Package](https://img.shields.io/badge/macOS-v2.6.11-000000?logo=apple&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/linapse-service.pkg)
+[![Windows Setup](https://img.shields.io/badge/Windows-v2.6.12-0078D6?logo=windows&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe)
+[![macOS Package](https://img.shields.io/badge/macOS-v2.6.12-000000?logo=apple&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/linapse-service.pkg)
 
 
 **Linapse** is a cross-platform software stack (supporting Linux, Windows, and macOS) for the [CAD Mouse MK2](https://github.com/sb-ocr/cad-mouse-mk2) — a DIY 6-degrees-of-freedom "space mouse" that senses motion with three magnetic field sensors instead of optics. Since the hardware has no official drivers from 3Dconnexion, this project supplies everything needed to make it a first-class input device on Linux, Windows, and macOS: device firmware, a host-side service, and a web configurator.
@@ -78,7 +78,7 @@ Tune dead zones, the Kalman filter, and the response curve against a live 3D Ben
 └───────────────┬───────────────────────────────┬──────────────────┘
                 │ USB HID (buttons)             │ USB serial (telemetry, config)
                 ▼                               ▼
-        /dev/input/hidraw               linapse-service  (linux/)
+        /dev/input/hidraw               linapse-service  (service/)
                 │                        • reads serial & button hidraw
                 │                        • dispatches buttons/taps → ydotool
                 │                        • scales/inverts & writes motion
@@ -109,7 +109,7 @@ How the data flows:
 |------|------------|
 | [`setup.sh`](setup.sh) | Top-level installer — packages, firmware (`--flash`), host integration, and configurator service. |
 | [`firmware/`](firmware/) | RP2040 firmware (PlatformIO). Motion decode, filtering, tap detection, LED engine, USB HID + serial protocol. See [firmware/README.md](firmware/README.md) and [firmware/LED_COLOR_CONFIG.md](firmware/LED_COLOR_CONFIG.md). |
-| [`linux/`](linux/) | Cross-platform host-side daemon and integration: `install.sh` (Linux), `linapse-service` (core service running on Linux, Windows, macOS), udev rules/systemd (Linux), userscripts, calibration tools. See [linux/README.md](linux/README.md). |
+| [`service/`](service/) | Cross-platform host-side daemon and integration: `install.sh` (Linux), `linapse-service` (core service running on Linux, Windows, macOS), udev rules/systemd (Linux), userscripts, calibration tools. See [service/README.md](service/README.md). |
 | [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md) | Application integrations guide — how to setup, configure and verify all 14 supported and unsupported applications. |
 | [`configurator/`](configurator/) | Linapse web configurator — a static web app (Three.js 3D viewport) that talks to `linapse-service` over WebSocket. |
 | [`platformio.ini`](platformio.ini) | Firmware build configuration. |
@@ -136,7 +136,7 @@ For Windows and macOS, pre-compiled service packages and installers are automati
   If you prefer running from source:
   ```bash
   pip install websockets pyserial pynput hidapi
-  python linux/linapse-service
+  python service/linapse-service
   ```
 
 It still leaves two inherently hands-on steps to you: flashing the firmware (the RP2040 must be physically put into BOOTSEL mode — `--flash` walks you through it) and installing the Tampermonkey userscript (browser extensions can't be scripted). The manual breakdown below documents each piece if you'd rather run them yourself.
@@ -154,14 +154,14 @@ pio run                       # build
 ### 2. Install the Linux integration
 
 ```bash
-cd linux
+cd service
 chmod +x install.sh
 ./install.sh
 ```
 
-This installs `linapse-service`, enables the systemd user services (`ydotoold`, `spacenav-ws`, `linapse-service`), writes udev rules, and patches `spacenav-ws`. Full details, prerequisites, and troubleshooting are in **[linux/README.md](linux/README.md)**.
+This installs `linapse-service`, enables the systemd user services (`ydotoold`, `spacenav-ws`, `linapse-service`), writes udev rules, and patches `spacenav-ws`. Full details, prerequisites, and troubleshooting are in **[service/README.md](service/README.md)**.
 
-Then install the Tampermonkey userscript ([`linux/linapse-browser-connector.user.js`](linux/linapse-browser-connector.user.js)) and open OnShape or SketchUp Web. For setup instructions for native applications (Blender, FreeCAD, Maya, etc.) and game engines (Unreal, Unity), see **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**.
+Then install the Tampermonkey userscript ([`service/linapse-browser-connector.user.js`](service/linapse-browser-connector.user.js)) and open OnShape or SketchUp Web. For setup instructions for native applications (Blender, FreeCAD, Maya, etc.) and game engines (Unreal, Unity), see **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**.
 
 ### 3. Open the configurator
 

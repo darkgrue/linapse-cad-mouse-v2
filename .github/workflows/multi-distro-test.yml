@@ -69,7 +69,7 @@ jobs:
       - name: Run pytest suite inside container
         run: |
           docker exec -e XDG_RUNTIME_DIR=/run/user/0 -e DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/0/bus \
-            systemd-container sh -c "cd /workspace && pytest linux/ --tb=short 2>&1 | tee pytest_${{ matrix.distro }}_output.log"
+            systemd-container sh -c "cd /workspace && pytest service/ --tb=short 2>&1 | tee pytest_${{ matrix.distro }}_output.log"
 
       - name: Upload Linux test logs on failure
         if: failure()
@@ -127,7 +127,7 @@ jobs:
         run: ls -la results/
 
       - name: Run badge updater script
-        run: python3 linux/update_badges.py results/
+        run: python3 service/update_badges.py results/
 
       - name: Check for changes
         id: git-check
@@ -170,7 +170,7 @@ jobs:
       - name: Run tests on Windows
         shell: bash
         run: |
-          pytest linux/ --tb=short 2>&1 | tee pytest_windows_output.log
+          pytest service/ --tb=short 2>&1 | tee pytest_windows_output.log
 
       - name: Upload Windows test logs on failure
         if: failure()
@@ -181,7 +181,7 @@ jobs:
 
       - name: Compile linapse-service
         run: |
-          pyinstaller --onefile --name linapse-service --hidden-import=pynput --hidden-import=hid --hidden-import=websockets linux/linapse-service
+          pyinstaller --onefile --name linapse-service --hidden-import=pynput --hidden-import=hid --hidden-import=websockets service/linapse-service
 
       - name: Update AppVersion in installer.iss
         shell: powershell
@@ -235,11 +235,11 @@ jobs:
 
       - name: Run tests on macOS
         run: |
-          pytest linux/
+          pytest service/
 
       - name: Compile linapse-service
         run: |
-          pyinstaller --onefile --name linapse-service --hidden-import=pynput --hidden-import=hid --hidden-import=websockets linux/linapse-service
+          pyinstaller --onefile --name linapse-service --hidden-import=pynput --hidden-import=hid --hidden-import=websockets service/linapse-service
 
       - name: Prepare launchd agent payload directory structures
         run: |

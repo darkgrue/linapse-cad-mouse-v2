@@ -24,7 +24,7 @@ Guide on how to configure and verify 6DoF motion for various 3D, CAD, and game e
 Native Linux applications connect to the local SpaceMouse daemon via `libspnav`.
 
 ### Prerequisites
-1. Run `./setup.sh` or `linux/install.sh`. This installs the systemd environment config at `~/.config/environment.d/99-spnav.conf`.
+1. Run `./setup.sh` or `service/install.sh`. This installs the systemd environment config at `~/.config/environment.d/99-spnav.conf`.
 2. **You must log out and back in** (or reboot) to apply this environment configuration to your desktop environment.
 3. Verify that the env variable is active: `echo $SPNAV_SOCKET`. It should output `/run/user/<UID>/spnav.sock`.
 
@@ -79,7 +79,7 @@ Web applications run in sandboxed browsers and cannot read the UNIX socket. They
 ### Setup Steps
 1. Make sure `spacenav-ws` is running: `systemctl --user status spacenav-ws`.
 2. Install the **Tampermonkey** extension in your browser.
-3. Install the userscript `linux/linapse-browser-connector.user.js` (by dragging it onto the Tampermonkey dashboard).
+3. Install the userscript `service/linapse-browser-connector.user.js` (by dragging it onto the Tampermonkey dashboard).
    - This script spoofs `navigator.platform` to `'Win32'` and matches `cad.onshape.com` and `*.sketchup.com`.
 
 #### OnShape

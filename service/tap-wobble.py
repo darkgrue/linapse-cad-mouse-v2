@@ -8,7 +8,7 @@ Captures the full waveform of a tap + spring oscillation to tune:
   - TAP_VELOCITY_THRESHOLD (delta between frames to count as tap)
 
 Usage:
-    sudo python3 linux/tap-wobble.py [/dev/ttyACM0]
+    sudo python3 service/tap-wobble.py [/dev/ttyACM0]
 
 Press Enter to arm, then tap once. The script captures the waveform,
 plots it in-terminal, and reports settling time at various thresholds.

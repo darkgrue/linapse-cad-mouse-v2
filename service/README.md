@@ -40,7 +40,7 @@ Before running the installer, flash the firmware. Build and copy the firmware:
 ## Installation
 
 ```bash
-cd linux
+cd service
 chmod +x install.sh
 ./install.sh
 ```
@@ -56,7 +56,7 @@ The installer:
 After the installer finishes, install the Tampermonkey userscript:
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser
-2. Drag `linux/linapse-browser-connector.user.js` onto the Tampermonkey dashboard
+2. Drag `service/linapse-browser-connector.user.js` onto the Tampermonkey dashboard
 3. Open OnShape or SketchUp Web and open any document — motion should work immediately
 
 For detailed setup, configuration, and verification guides for all 14 supported/experimental applications (including Blender, FreeCAD, Unreal Engine, Unity, etc.), see **[docs/INTEGRATIONS.md](../docs/INTEGRATIONS.md)**.

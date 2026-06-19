@@ -26,8 +26,8 @@
 - Map buttons/taps/motion deflection to keystrokes, scroll, volume, etc.
 
 ## Code Layout
-- `linux/linapse-service`: The main host daemon
-- `linux/test_signal_integration.py`: Main integration tests
+- `service/linapse-service`: The main host daemon
+- `service/test_signal_integration.py`: Main integration tests
 - `VERSION`: Holds the project version
 - `CHANGELOG.md`: Tracks project history
 - `.github/workflows/multi-distro-test.yml`: GHA workflow

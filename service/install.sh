@@ -140,7 +140,7 @@ cat <<'EOF'
 
 Next steps:
   1. Install the Tampermonkey browser extension.
-  2. Drag linux/linapse-browser-connector.user.js onto the Tampermonkey dashboard to install the userscript.
+  2. Drag service/linapse-browser-connector.user.js onto the Tampermonkey dashboard to install the userscript.
   3. Visit https://cad.onshape.com or SketchUp Web and open any document.
   4. Move the CAD Mouse — the viewport should respond.
 

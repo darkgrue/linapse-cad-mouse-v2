@@ -4,7 +4,7 @@
 # Front door for setting up the entire stack on a fresh machine:
 #   1. install distro packages (ydotool, uv)
 #   2. (optional) flash the firmware            --flash
-#   3. install the host integration             linux/install.sh
+#   3. install the host integration             service/install.sh
 #   4. install + enable the configurator service
 #   5. print the OnShape userscript steps
 #
@@ -117,15 +117,15 @@ command -v uvx >/dev/null || command -v uv >/dev/null || err "uv install failed.
 # ── 2. Firmware (optional) ─────────────────────────────────────────────────────
 if [ "$DO_FLASH" -eq 1 ]; then
     section "2. Firmware"
-    bash "$REPO_DIR/linux/flash.sh"
+    bash "$REPO_DIR/service/flash.sh"
 else
     section "2. Firmware (skipped)"
     info "Run with --flash to build and flash, or flash manually. See README.md."
 fi
 
 # ── 3. Host integration ────────────────────────────────────────────────────────
-section "3. Host integration (linux/install.sh)"
-( cd "$REPO_DIR/linux" && chmod +x install.sh && ./install.sh )
+section "3. Host integration (service/install.sh)"
+( cd "$REPO_DIR/service" && chmod +x install.sh && ./install.sh )
 
 # ── 4. Configurator service ────────────────────────────────────────────────────
 section "4. Configurator service (port $PORT)"
@@ -134,7 +134,7 @@ section "4. Configurator service (port $PORT)"
 mkdir -p "$SYSTEMD_USER"
 sed -e "s|__CONFIGURATOR_DIR__|$CONFIGURATOR_DIR|g" \
     -e "s|__PORT__|$PORT|g" \
-    "$REPO_DIR/linux/systemd/linapse-configurator.service" \
+    "$REPO_DIR/service/systemd/linapse-configurator.service" \
     > "$SYSTEMD_USER/linapse-configurator.service"
 systemctl --user daemon-reload
 systemctl --user enable --now linapse-configurator
@@ -146,7 +146,7 @@ cat <<EOF
 
   Tampermonkey can't be scripted, so finish these by hand:
     1. Install the Tampermonkey browser extension.
-    2. Drag linux/linapse-browser-connector.user.js onto the Tampermonkey dashboard.
+    2. Drag service/linapse-browser-connector.user.js onto the Tampermonkey dashboard.
     3. Open https://cad.onshape.com or SketchUp Web and move the mouse — the viewport should respond.
 
 ######## Done

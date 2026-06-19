@@ -176,8 +176,8 @@ def test_benchy_viewport_motion_and_toasts(tmp_path):
         json.dump(initial_actions, f)
 
     # Setup directories
-    linux_dir = Path(__file__).parent
-    configurator_dir = linux_dir.parent / "configurator"
+    service_dir = Path(__file__).parent
+    configurator_dir = service_dir.parent / "configurator"
     assert configurator_dir.exists(), f"Configurator directory not found at {configurator_dir}"
 
     # Allocate ports
