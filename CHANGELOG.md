@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.4] - 2026-06-19
+
+### Added
+- **UI Toast Notification E2E Tests**: Extended Playwright test suite in `linux/test_playwright_benchy.py` to simulate tap gestures and physical button clicks, verifying that click and tap toast messages show up in the browser with correct title and content tags.
+
 ## [2.5.3] - 2026-06-19
 
 ### Added

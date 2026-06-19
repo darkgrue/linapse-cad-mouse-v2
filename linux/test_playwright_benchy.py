@@ -206,6 +206,22 @@ def test_benchy_viewport_motion():
             curr = get_current()
             assert curr['rz'] < initial['rz'], f"RZ Roll failed: expected rz < {initial['rz']}, got {curr['rz']}"
 
+            # Test Button Press Toast
+            ws_server.broadcast("BUTTON:0:1")
+            time.sleep(0.3)
+            toast_header = page.locator(".toast-header").first.text_content()
+            toast_body = page.locator(".toast-body").first.text_content()
+            assert "Button Pressed" in toast_header, f"Expected 'Button Pressed' in toast header, got '{toast_header}'"
+            assert "LEFT BUTTON" in toast_body, f"Expected 'LEFT BUTTON' in toast body, got '{toast_body}'"
+
+            # Test Tap Gesture Toast
+            ws_server.broadcast("TAP:top:1")
+            time.sleep(0.3)
+            tap_toast_header = page.locator(".toast-header").last.text_content()
+            tap_toast_body = page.locator(".toast-body").last.text_content()
+            assert "Tap Registered" in tap_toast_header, f"Expected 'Tap Registered' in toast header, got '{tap_toast_header}'"
+            assert "TOP TAP (1X)" in tap_toast_body.upper(), f"Expected 'TOP TAP (1X)' in toast body, got '{tap_toast_body}'"
+
             browser.close()
     finally:
         ws_server.stop()
