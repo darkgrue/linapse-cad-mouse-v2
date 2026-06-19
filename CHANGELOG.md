@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.5] - 2026-06-19
+
+### Changed
+- **Configurator LED Preview**: Updated volume effect preview animation to start at the bottom-left (LED 1) and fill clockwise.
+- **Configurator Mouse Render**: Updated volume effect render overlay on the 3D mouse image to start at the bottom-left and fill clockwise.
+
+### Fixed
+- **Firmware Volume Effect**: Corrected physical LED index mapping (`P = (3 - L + 8) % 8`) so that the volume level starts lighting up at bottom-left (physical index 3) and fills clockwise.
+- **Daemon Responsiveness**: Fixed serial thread crash during firmware flash by catching specific exceptions (`serial.SerialException, TypeError, OSError, AttributeError`) thrown on port closing.
+
 ## [2.9.4] - 2026-06-19
 
 ### Changed

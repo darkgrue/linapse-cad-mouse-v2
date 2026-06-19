@@ -208,7 +208,7 @@ def serial_thread(actions_ref):
                         state.firmware_version = line.split("=")[1].strip()
                         state.broadcast_from_thread(f"VERSION_INFO:{{\"service\":\"{state.service_version}\",\"firmware\":\"{state.firmware_version}\"}}")
                     state.broadcast_from_thread(line)
-        except serial.SerialException as e:
+        except (serial.SerialException, TypeError, OSError, AttributeError) as e:
             state.ser_holder[0] = None
             print(f"[serial] {e} — retrying in 3s")
             time.sleep(3)

@@ -146,7 +146,7 @@ void EffectEngine::doVolume() {
     } else {
       factor = 0.0f;
     }
-    int P = (4 - L + n) % n;
+    int P = (3 - L + n) % n;
     ledController.effectPixel(P, scaledColor(factor));
   }
   ledController.effectCommit();
