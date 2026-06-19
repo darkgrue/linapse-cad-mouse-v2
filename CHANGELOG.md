@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.2] - 2026-06-19
+
+### Fixed
+- **3D Benchy Axis Inversion**: Updated the 3D Benchy rendering logic in the web configurator to correctly apply axis inversion settings (`actions.inversion`) to translations and rotations.
+- **CI Dependency Fix**: Added `pyyaml` to the list of Python dependencies installed in container, Windows, and macOS GHA runners. This fixes the `ModuleNotFoundError` crash during the CI run.
+
 ## [2.6.1] - 2026-06-19
 
 ### Added

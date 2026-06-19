@@ -59,7 +59,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          docker exec systemd-container sh -c "python3 -m pip install pytest websockets pyserial --break-system-packages || python3 -m pip install pytest websockets pyserial || pip3 install pytest websockets pyserial"
+          docker exec systemd-container sh -c "python3 -m pip install pytest websockets pyserial pyyaml --break-system-packages || python3 -m pip install pytest websockets pyserial pyyaml || pip3 install pytest websockets pyserial pyyaml"
 
       - name: Run setup.sh
         run: |
@@ -139,7 +139,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pyinstaller websockets pyserial pynput hidapi pytest playwright
+          pip install pyinstaller websockets pyserial pynput hidapi pytest playwright pyyaml
 
       - name: Install Playwright Browsers
         run: |
@@ -197,7 +197,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pyinstaller websockets pyserial pynput hidapi pytest playwright
+          pip install pyinstaller websockets pyserial pynput hidapi pytest playwright pyyaml
 
       - name: Install Playwright Browsers
         run: |

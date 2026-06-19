@@ -2763,11 +2763,19 @@ function applyMotion(v) {
   if (!benchyScene) return;
   const { benchy, xBound, yBound, requestRender } = benchyScene;
   const T = 0.001, R = 0.00028;
-  benchy.position.x = Math.max(-xBound, Math.min(xBound, benchy.position.x + v[0] * T));
-  benchy.position.y = Math.max(-yBound, Math.min(yBound, benchy.position.y - v[2] * T));
-  benchy.rotation.x += v[3] * R;
-  benchy.rotation.y += v[4] * R;
-  benchy.rotation.z -= v[5] * R;
+  
+  const inv = (actions && actions.inversion) ? actions.inversion : {};
+  const dx = (inv.x ? -v[0] : v[0]) * T;
+  const dy = (inv.z ? -v[2] : v[2]) * T;
+  const drx = (inv.rx ? -v[3] : v[3]) * R;
+  const dry = (inv.ry ? -v[4] : v[4]) * R;
+  const drz = (inv.rz ? -v[5] : v[5]) * R;
+
+  benchy.position.x = Math.max(-xBound, Math.min(xBound, benchy.position.x + dx));
+  benchy.position.y = Math.max(-yBound, Math.min(yBound, benchy.position.y - dy));
+  benchy.rotation.x += drx;
+  benchy.rotation.y += dry;
+  benchy.rotation.z -= drz;
   requestRender();
 }
 
