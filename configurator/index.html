@@ -143,6 +143,58 @@ body {
 .tab:hover { color: var(--text2); }
 .tab.active { color: var(--green); border-bottom-color: var(--green); }
 
+/* ── Mode selector bar ────────────────────────────────────── */
+.mode-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 20px;
+  flex-shrink: 0;
+}
+
+.mode-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#modeSelect {
+  width: auto;
+  min-width: 140px;
+  padding: 4px 28px 4px 10px;
+  background-color: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.btn-mode {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-radius: 2px;
+}
+
+.btn-mode:hover {
+  background: var(--border2);
+  color: var(--green);
+  border-color: var(--green);
+}
+
 /* ── Main layout ──────────────────────────────────────────── */
 .main {
   display: flex;
@@ -800,6 +852,17 @@ input[type=range]::-webkit-slider-thumb {
   <div class="tab" onclick="switchTab('sensitivity', this)">Sensitivity</div>
 </div>
 
+<!-- Mode Selector Bar -->
+<div class="mode-bar">
+  <span class="mode-label">Active Mode:</span>
+  <select id="modeSelect" onchange="onModeSelectChange(this.value)">
+    <option value="Default">Default</option>
+  </select>
+  <button class="btn-mode" onclick="createModePrompt()">New Mode</button>
+  <button class="btn-mode" onclick="renameModePrompt()">Rename</button>
+  <button class="btn-mode" onclick="deleteModePrompt()">Delete</button>
+</div>
+
 <!-- Main -->
 <div class="main" id="mainArea">
 
@@ -1244,7 +1307,7 @@ let currentEffect = 'solid';
 
 const TAP_DIRS = ['top','left','right','front','back'];
 const BTN_KEYS = ['btn-0', 'btn-1', 'btn-chord'];
-const MAX_COUNTS = { 'top': 3, 'left': 2, 'right': 2, 'front': 2, 'back': 2 };
+const MAX_COUNTS = { 'top': 3, 'left': 2, 'right': 2, 'front': 2, 'back': 2, 'btn-0': 2, 'btn-1': 2 };
 
 const ACTION_TYPES = [
   { id: 'none',        label: 'None' },
@@ -1254,32 +1317,298 @@ const ACTION_TYPES = [
   { id: 'mouse_move',  label: 'Mouse Move' },
   { id: 'exec',        label: 'Run Command' },
   { id: 'macro',       label: 'Macro' },
+  { id: 'mode',        label: 'Mode' },
+  { id: 'media',       label: 'Media' },
 ];
 
 const DEFAULT_ACTIONS = {
   button_override: false,
-  buttons: {
-    "0": {"action": "mouse_scroll", "direction": "down", "amount": 1},
-    "1": {"action": "mouse_scroll", "direction": "up", "amount": 1},
-    "chord": {"action": "key", "value": "42:1 8:1 8:0 42:0"}
-  },
-  taps: {
-    "top:1":{"action":"none"}, "top:2":{"action":"none"}, "top:3":{"action":"none"},
-    "left:1":{"action":"none"}, "left:2":{"action":"none"},
-    "right:1":{"action":"none"}, "right:2":{"action":"none"},
-    "front:1":{"action":"none"}, "front:2":{"action":"none"},
-    "back:1":{"action":"none"}, "back:2":{"action":"none"}
-  },
   sensitivity: {
     "x_pos": 1.0, "x_neg": 1.0, "y_pos": 1.0, "y_neg": 1.0, "z_pos": 1.0, "z_neg": 1.0,
     "rx_pos": 1.0, "rx_neg": 1.0, "ry_pos": 1.0, "ry_neg": 1.0, "rz_pos": 1.0, "rz_neg": 1.0
   },
   inversion: {
-    "x": false, "y": false, "z": false, "rx": false, "ry": false, "rz": false
-  }
+    "x": false, "y": false, "z": false, "rx": true, "ry": false, "rz": true
+  },
+  modes: {
+    "Default": {
+      buttons: {
+        "0": {"action": "mouse_scroll", "direction": "down", "amount": 1},
+        "1": {"action": "mouse_scroll", "direction": "up", "amount": 1},
+        "chord": {"action": "key", "value": "shift+7"}
+      },
+      taps: {
+        "top:1": {"action": "mouse_click", "button": "left"},
+        "top:2": {"action": "mode", "value": "Browser"},
+        "top:3": {"action": "none"},
+        "left:1": {"action": "none"}, "left:2": {"action": "none"},
+        "right:1": {"action": "none"}, "right:2": {"action": "none"},
+        "front:1": {"action": "none"}, "front:2": {"action": "none"},
+        "back:1": {"action": "none"}, "back:2": {"action": "none"}
+      },
+      led: {
+        effect: "rainbow_swirl",
+        color: "FFFFFF",
+        brightness: 128
+      }
+    },
+    "TargetMode": {
+      buttons: {
+        "0": {"action": "mouse_scroll", "direction": "down", "amount": 1},
+        "1": {"action": "mouse_scroll", "direction": "up", "amount": 1},
+        "chord": {"action": "key", "value": "shift+7"}
+      },
+      taps: {
+        "top:1": {"action": "mouse_click", "button": "left"},
+        "top:2": {"action": "none"},
+        "top:3": {"action": "none"},
+        "left:1": {"action": "none"}, "left:2": {"action": "none"},
+        "right:1": {"action": "none"}, "right:2": {"action": "none"},
+        "front:1": {"action": "none"}, "front:2": {"action": "none"},
+        "back:1": {"action": "none"}, "back:2": {"action": "none"}
+      },
+      led: {
+        effect: "solid",
+        color: "FFFFFF",
+        brightness: 128
+      }
+    },
+    "Browser": {
+      buttons: {
+        "0": {"action": "key", "value": "ctrl+pageup"},
+        "1": {"action": "key", "value": "ctrl+pagedown"}
+      },
+      taps: {
+        "top:2": {"action": "mode", "value": "Media"}
+      },
+      led: {
+        effect: "solid",
+        color: "0000FF",
+        brightness: 128
+      }
+    },
+    "Media": {
+      buttons: {
+        "0": {"action": "key", "value": "prev"},
+        "1": {"action": "key", "value": "next"}
+      },
+      taps: {
+        "top:2": {"action": "mode", "value": "Default"}
+      },
+      led: {
+        effect: "dot_swirl",
+        color: "00FF00",
+        brightness: 128
+      }
+    }
+  },
+  current_mode: "Browser"
 };
 
 actions = JSON.parse(JSON.stringify(DEFAULT_ACTIONS));
+
+// ── Modes helper and event handlers ──────────────────────────────────────────
+function getActiveMode() {
+  if (!actions) return null;
+  if (!actions.modes || !actions.current_mode) {
+    if (!actions.current_mode) {
+      actions.current_mode = "Default";
+    }
+    if (!actions.modes) {
+      actions.modes = {};
+    }
+    if (!actions.modes[actions.current_mode]) {
+      actions.modes[actions.current_mode] = {
+        buttons: actions.buttons || {
+          "0": {"action": "mouse_scroll", "direction": "down", "amount": 1},
+          "1": {"action": "mouse_scroll", "direction": "up", "amount": 1},
+          "chord": {"action": "key", "value": "42:1 8:1 8:0 42:0"}
+        },
+        taps: actions.taps || {
+          "top:1":{"action":"none"}, "top:2":{"action":"none"}, "top:3":{"action":"none"},
+          "left:1":{"action":"none"}, "left:2":{"action":"none"},
+          "right:1":{"action":"none"}, "right:2":{"action":"none"},
+          "front:1":{"action":"none"}, "front:2":{"action":"none"},
+          "back:1":{"action":"none"}, "back:2":{"action":"none"}
+        },
+        led: actions.led || {
+          effect: "breathing",
+          color: "FF2400",
+          brightness: 128
+        }
+      };
+    }
+    delete actions.buttons;
+    delete actions.taps;
+    delete actions.led;
+  }
+  if (!actions.modes[actions.current_mode]) {
+    actions.modes[actions.current_mode] = {
+      buttons: {
+        "0": {"action": "mouse_scroll", "direction": "down", "amount": 1},
+        "1": {"action": "mouse_scroll", "direction": "up", "amount": 1},
+        "chord": {"action": "key", "value": "42:1 8:1 8:0 42:0"}
+      },
+      taps: {
+        "top:1":{"action":"none"}, "top:2":{"action":"none"}, "top:3":{"action":"none"},
+        "left:1":{"action":"none"}, "left:2":{"action":"none"},
+        "right:1":{"action":"none"}, "right:2":{"action":"none"},
+        "front:1":{"action":"none"}, "front:2":{"action":"none"},
+        "back:1":{"action":"none"}, "back:2":{"action":"none"}
+      },
+      led: {
+        effect: "breathing",
+        color: "FF2400",
+        brightness: 128
+      }
+    };
+  }
+  return actions.modes[actions.current_mode];
+}
+
+function updateModeSelectDropdown() {
+  const select = document.getElementById('modeSelect');
+  if (!select || !actions || !actions.modes) return;
+  select.innerHTML = '';
+  Object.keys(actions.modes).forEach(modeName => {
+    const opt = document.createElement('option');
+    opt.value = modeName;
+    opt.textContent = modeName;
+    if (modeName === actions.current_mode) {
+      opt.selected = true;
+    }
+    select.appendChild(opt);
+  });
+}
+
+function onModeSelectChange(modeName) {
+  if (!actions || !actions.modes || !actions.modes[modeName]) return;
+  actions.current_mode = modeName;
+  
+  sendCmd('actions ' + JSON.stringify(actions));
+  syncActionsUI();
+  closePanel();
+  
+  const newMode = getActiveMode();
+  updateLightingUI(newMode.led);
+  if (newMode.led) {
+    if (newMode.led.effect) sendCmd(`led effect ${newMode.led.effect}`);
+    if (newMode.led.color) sendCmd(`led color ${newMode.led.color}`);
+    if (newMode.led.brightness !== undefined) sendCmd(`led brightness ${newMode.led.brightness}`);
+  }
+}
+
+function createModePrompt() {
+  const name = prompt("Enter new mode name:");
+  if (!name) return;
+  const cleanName = name.trim();
+  if (cleanName === "") return;
+  if (actions.modes[cleanName]) {
+    alert("Mode already exists!");
+    return;
+  }
+  const activeMode = getActiveMode();
+  actions.modes[cleanName] = JSON.parse(JSON.stringify(activeMode));
+  actions.current_mode = cleanName;
+  
+  sendCmd('actions ' + JSON.stringify(actions));
+  updateModeSelectDropdown();
+  syncActionsUI();
+  closePanel();
+  
+  const newMode = getActiveMode();
+  updateLightingUI(newMode.led);
+  if (newMode.led) {
+    if (newMode.led.effect) sendCmd(`led effect ${newMode.led.effect}`);
+    if (newMode.led.color) sendCmd(`led color ${newMode.led.color}`);
+    if (newMode.led.brightness !== undefined) sendCmd(`led brightness ${newMode.led.brightness}`);
+  }
+}
+
+function renameModePrompt() {
+  const oldName = actions.current_mode;
+  if (oldName === "Default") {
+    alert("Cannot rename Default mode!");
+    return;
+  }
+  const newName = prompt(`Rename mode "${oldName}" to:`, oldName);
+  if (!newName) return;
+  const cleanName = newName.trim();
+  if (cleanName === "" || cleanName === oldName) return;
+  if (actions.modes[cleanName]) {
+    alert("Mode already exists!");
+    return;
+  }
+  actions.modes[cleanName] = actions.modes[oldName];
+  delete actions.modes[oldName];
+  actions.current_mode = cleanName;
+  
+  sendCmd('actions ' + JSON.stringify(actions));
+  updateModeSelectDropdown();
+  syncActionsUI();
+  closePanel();
+}
+
+function deleteModePrompt() {
+  const modeToDelete = actions.current_mode;
+  if (modeToDelete === "Default") {
+    alert("Cannot delete Default mode!");
+    return;
+  }
+  if (!confirm(`Are you sure you want to delete mode "${modeToDelete}"?`)) {
+    return;
+  }
+  delete actions.modes[modeToDelete];
+  actions.current_mode = "Default";
+  
+  sendCmd('actions ' + JSON.stringify(actions));
+  updateModeSelectDropdown();
+  syncActionsUI();
+  closePanel();
+  
+  const newMode = getActiveMode();
+  updateLightingUI(newMode.led);
+  if (newMode.led) {
+    if (newMode.led.effect) sendCmd(`led effect ${newMode.led.effect}`);
+    if (newMode.led.color) sendCmd(`led color ${newMode.led.color}`);
+    if (newMode.led.brightness !== undefined) sendCmd(`led brightness ${newMode.led.brightness}`);
+  }
+}
+
+function updateLightingUI(led) {
+  if (!led) {
+    led = { effect: "breathing", color: "FF2400", brightness: 128 };
+  }
+  const effect = led.effect || 'breathing';
+  const color = led.color || 'FF2400';
+  const brightness = led.brightness !== undefined ? led.brightness : 128;
+
+  const brightSlider = document.getElementById('ledBrightness');
+  if (brightSlider) {
+    brightSlider.value = brightness;
+  }
+  const brightVal = document.getElementById('brightVal');
+  if (brightVal) {
+    brightVal.textContent = Math.round(brightness / 255 * 100);
+  }
+  let colorHex = color;
+  if (!colorHex.startsWith('#')) {
+    colorHex = '#' + colorHex;
+  }
+  const colorInput = document.getElementById('ledColor');
+  if (colorInput) {
+    colorInput.value = colorHex;
+  }
+
+  const chip = Array.from(document.querySelectorAll('.effect-chip'))
+    .find(c => c.getAttribute('onclick').includes(`'${effect}'`));
+  if (chip) {
+    selectEffect(effect, chip);
+  } else {
+    currentEffect = effect;
+    animateLedPreview();
+  }
+}
 
 // ── Callout layout ────────────────────────────────────────────────────────────
 // Each callout: {id, lx, ly = label center, dx, dy = device attachment point}
@@ -1478,9 +1807,85 @@ function renderBtnPanel(key, body) {
   }
 
   const btnKey = key === 'btn-0' ? '0' : key === 'btn-1' ? '1' : 'chord';
-  const act = actions.buttons[btnKey] || { action: 'none' };
-  renderActionEditor(act, body, (newAct) => {
-    actions.buttons[btnKey] = newAct;
+
+  if (btnKey === 'chord') {
+    const act = getActiveMode().buttons[btnKey] || { action: 'none' };
+    renderActionEditor(act, body, (newAct) => {
+      getActiveMode().buttons[btnKey] = newAct;
+    });
+    return;
+  }
+
+  // Count tabs
+  const maxCount = MAX_COUNTS[key] || 2;
+  const tabs = document.createElement('div');
+  tabs.className = 'count-tabs';
+  for (let i = 1; i <= maxCount; i++) {
+    const t = document.createElement('div');
+    t.className = 'count-tab' + (i === currentCount ? ' active' : '');
+    t.textContent = i + '×';
+    t.onclick = () => {
+      currentCount = i;
+      document.querySelectorAll('.count-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const editorArea = document.getElementById('actionEditorArea');
+      if (editorArea) {
+        editorArea.innerHTML = '';
+        const fullKey = btnKey + ':' + currentCount;
+        let act = getActiveMode().buttons[fullKey];
+        if (!act && currentCount === 1) {
+          act = getActiveMode().buttons[btnKey];
+        }
+        if (!act) act = { action: 'none' };
+        renderActionEditor(act, editorArea, (newAct) => {
+          getActiveMode().buttons[fullKey] = newAct;
+          if (currentCount === 1) {
+            delete getActiveMode().buttons[btnKey];
+          }
+        });
+      }
+    };
+    tabs.appendChild(t);
+  }
+
+  // Plus button
+  const addTab = document.createElement('div');
+  addTab.className = 'count-tab';
+  addTab.textContent = '+';
+  addTab.style.color = 'var(--green)';
+  addTab.style.borderColor = 'var(--border2)';
+  addTab.style.fontWeight = 'bold';
+  addTab.style.padding = '5px 12px';
+  addTab.onclick = () => {
+    MAX_COUNTS[key] = maxCount + 1;
+    currentCount = maxCount + 1;
+    const fullKey = btnKey + ':' + currentCount;
+    const activeMode = getActiveMode();
+    if (!activeMode.buttons[fullKey]) {
+      activeMode.buttons[fullKey] = { action: 'none' };
+    }
+    renderPanel(key, true);
+  };
+  tabs.appendChild(addTab);
+
+  body.appendChild(tabs);
+
+  // Editor area
+  const editorArea = document.createElement('div');
+  editorArea.id = 'actionEditorArea';
+  body.appendChild(editorArea);
+
+  const fullKey = btnKey + ':' + currentCount;
+  let act = getActiveMode().buttons[fullKey];
+  if (!act && currentCount === 1) {
+    act = getActiveMode().buttons[btnKey];
+  }
+  if (!act) act = { action: 'none' };
+  renderActionEditor(act, editorArea, (newAct) => {
+    getActiveMode().buttons[fullKey] = newAct;
+    if (currentCount === 1) {
+      delete getActiveMode().buttons[btnKey];
+    }
   });
 }
 
@@ -1502,8 +1907,8 @@ function renderTapPanel(key, body) {
       const editorArea = document.getElementById('actionEditorArea');
       editorArea.innerHTML = '';
       const tapKey = key + ':' + currentCount;
-      const act = actions.taps[tapKey] || { action: 'none' };
-      renderActionEditor(act, editorArea, (newAct) => { actions.taps[tapKey] = newAct; });
+      const act = getActiveMode().taps[tapKey] || { action: 'none' };
+      renderActionEditor(act, editorArea, (newAct) => { getActiveMode().taps[tapKey] = newAct; });
     };
     tabs.appendChild(t);
   }
@@ -1520,8 +1925,9 @@ function renderTapPanel(key, body) {
     MAX_COUNTS[key] = maxCount + 1;
     currentCount = maxCount + 1;
     const tapKey = key + ':' + currentCount;
-    if (!actions.taps[tapKey]) {
-      actions.taps[tapKey] = { action: 'none' };
+    const activeMode = getActiveMode();
+    if (!activeMode.taps[tapKey]) {
+      activeMode.taps[tapKey] = { action: 'none' };
     }
     renderPanel(key, false);
   };
@@ -1535,8 +1941,8 @@ function renderTapPanel(key, body) {
   body.appendChild(editorArea);
 
   const tapKey = key + ':' + currentCount;
-  const act = actions.taps[tapKey] || { action: 'none' };
-  renderActionEditor(act, editorArea, (newAct) => { actions.taps[tapKey] = newAct; });
+  const act = getActiveMode().taps[tapKey] || { action: 'none' };
+  renderActionEditor(act, editorArea, (newAct) => { getActiveMode().taps[tapKey] = newAct; });
 }
 
 function renderActionEditor(act, container, onSave) {
@@ -1589,6 +1995,50 @@ function renderSubFields(type, act, area, onChange) {
   area.innerHTML = '';
 
   if (type === 'none') {
+    return;
+  }
+
+  if (type === 'media') {
+    const curVal = act.command || 'play';
+    const mediaCommands = [
+      { id: 'play',          label: 'Play' },
+      { id: 'pause',         label: 'Pause' },
+      { id: 'forward',       label: 'Forward (Next Track)' },
+      { id: 'back',          label: 'Back (Prev Track)' },
+      { id: 'fast_forward',  label: 'Fast Forward (Seek Right)' },
+      { id: 'rewind',        label: 'Rewind (Seek Left)' },
+      { id: 'mute',          label: 'Mute' },
+      { id: 'volume_up',     label: 'Volume Up' },
+      { id: 'volume_down',   label: 'Volume Down' }
+    ];
+    let optionsHtml = '';
+    mediaCommands.forEach(cmd => {
+      optionsHtml += `<option value="${cmd.id}" ${cmd.id === curVal ? 'selected' : ''}>${cmd.label}</option>`;
+    });
+    area.innerHTML = `
+      <div class="field-group">
+        <div class="field-label">Media Command</div>
+        <select id="sf-media-cmd">
+          ${optionsHtml}
+        </select>
+      </div>`;
+    return;
+  }
+
+  if (type === 'mode') {
+    const modeKeys = actions && actions.modes ? Object.keys(actions.modes) : ['Default'];
+    const curVal = act.value || 'Default';
+    let optionsHtml = '';
+    modeKeys.forEach(m => {
+      optionsHtml += `<option value="${m}" ${m === curVal ? 'selected' : ''}>${m}</option>`;
+    });
+    area.innerHTML = `
+      <div class="field-group">
+        <div class="field-label">Target Mode</div>
+        <select id="sf-mode">
+          ${optionsHtml}
+        </select>
+      </div>`;
     return;
   }
 
@@ -1816,6 +2266,12 @@ function selectDir(el, dir) {
 
 function collectAction(type, area) {
   if (type === 'none')        return { action: 'none' };
+  if (type === 'mode') {
+    return { action: 'mode', value: document.getElementById('sf-mode').value };
+  }
+  if (type === 'media') {
+    return { action: 'media', command: document.getElementById('sf-media-cmd').value };
+  }
   if (type === 'key')         return { action: 'key', value: area.querySelector('#sf-key')?.value || '' };
   if (type === 'mouse_click') {
     const active = area.querySelector('.action-chip.active');
@@ -1908,7 +2364,8 @@ function connectWS() {
         const sensActive = document.getElementById('tab-sensitivity').classList.contains('active');
         if (sensActive) {
           const key = `${humanDir}:${countStr}`;
-          const actionObj = (actions && actions.taps) ? actions.taps[key] : null;
+          const activeMode = getActiveMode();
+          const actionObj = (activeMode && activeMode.taps) ? activeMode.taps[key] : null;
           let actionDesc = 'None';
           if (actionObj) {
             if (actionObj.action === 'key') {
@@ -1921,6 +2378,8 @@ function connectWS() {
               actionDesc = `Exec (${actionObj.value})`;
             } else if (actionObj.action === 'macro') {
               actionDesc = 'Macro sequence';
+            } else if (actionObj.action === 'mode') {
+              actionDesc = `Switch to Mode: ${actionObj.value}`;
             }
           }
           const tapLabel = `${humanDir.toUpperCase()} TAP (${countStr}x)`;
@@ -1939,15 +2398,16 @@ function connectWS() {
           if (sensActive) {
             let label = 'Unknown Button';
             let actionObj = null;
+            const activeMode = getActiveMode();
             if (btnId === '0') {
               label = 'Left Button';
-              actionObj = (actions && actions.buttons) ? actions.buttons['0'] : null;
+              actionObj = (activeMode && activeMode.buttons) ? activeMode.buttons['0'] : null;
             } else if (btnId === '1') {
               label = 'Right Button';
-              actionObj = (actions && actions.buttons) ? actions.buttons['1'] : null;
+              actionObj = (activeMode && activeMode.buttons) ? activeMode.buttons['1'] : null;
             } else if (btnId === 'chord') {
               label = 'Both Buttons';
-              actionObj = (actions && actions.buttons) ? actions.buttons['chord'] : null;
+              actionObj = (activeMode && activeMode.buttons) ? activeMode.buttons['chord'] : null;
             }
             
             let actionDesc = 'None';
@@ -1966,6 +2426,8 @@ function connectWS() {
                 actionDesc = 'Scroll Up';
               } else if (actionObj.action === 'scroll_down') {
                 actionDesc = 'Scroll Down';
+              } else if (actionObj.action === 'mode') {
+                actionDesc = `Switch to Mode: ${actionObj.value}`;
               }
             }
             showToast('Button Pressed', label.toUpperCase(), actionDesc);
@@ -1974,11 +2436,30 @@ function connectWS() {
       }
       return;
     }
+    if (msg.startsWith('MODE:')) {
+      const modeName = msg.slice(5).trim();
+      if (actions && actions.modes && actions.modes[modeName]) {
+        actions.current_mode = modeName;
+        updateModeSelectDropdown();
+        syncActionsUI();
+        closePanel();
+        const activeMode = getActiveMode();
+        if (activeMode) {
+          updateLightingUI(activeMode.led);
+        }
+      }
+      return;
+    }
     if (msg.startsWith('ACTIONS:')) {
       try {
         const loaded = JSON.parse(msg.slice(8));
         actions = loaded;
+        const activeMode = getActiveMode();
         syncActionsUI();
+        updateModeSelectDropdown();
+        if (activeMode) {
+          updateLightingUI(activeMode.led);
+        }
       } catch (err) {
         console.error(err);
       }
@@ -2390,8 +2871,9 @@ function toggleInversion(axis) {
 function syncActionsUI() {
   if (!actions) return;
   
-  if (actions.taps) {
-    Object.keys(actions.taps).forEach(key => {
+  const activeMode = getActiveMode();
+  if (activeMode && activeMode.taps) {
+    Object.keys(activeMode.taps).forEach(key => {
       const parts = key.split(':');
       if (parts.length === 2) {
         const dir = parts[0];
@@ -2596,13 +3078,24 @@ function hueToRgb(p, q, t) {
 
 async function applyLighting() {
   const hex    = document.getElementById('ledColor').value;
-  const bright = document.getElementById('ledBrightness').value;
+  const bright = parseInt(document.getElementById('ledBrightness').value);
   const [r,g,b] = hexToRgb(hex);
   const colorHex = (r*65536 + g*256 + b).toString(16).padStart(6,'0');
+
+  const activeMode = getActiveMode();
+  if (activeMode) {
+    if (!activeMode.led) activeMode.led = {};
+    activeMode.led.effect = currentEffect;
+    activeMode.led.color = colorHex.toUpperCase();
+    activeMode.led.brightness = bright;
+  }
 
   await sendCmd(`led effect ${currentEffect}`);
   await sendCmd(`led color ${colorHex}`);
   await sendCmd(`led brightness ${bright}`);
+
+  sendCmd('actions ' + JSON.stringify(actions));
+
   setStatus('LED applied', 'ok');
   setTimeout(() => setStatus('', ''), 2000);
 }
@@ -2614,7 +3107,12 @@ async function loadActionsFile() {
     const file = await fh.getFile();
     const text = await file.text();
     actions = JSON.parse(text);
+    const activeMode = getActiveMode();
     syncActionsUI();
+    updateModeSelectDropdown();
+    if (activeMode) {
+      updateLightingUI(activeMode.led);
+    }
     sendCmd('actions ' + JSON.stringify(actions));
     setStatus('Loaded & Applied: ' + file.name, 'ok');
     closePanel();
@@ -2755,6 +3253,12 @@ function showToast(title, message, actionText) {
 }
 
 initCallouts();
+getActiveMode(); // Ensure migration
+updateModeSelectDropdown();
+const activeModeStartup = getActiveMode();
+if (activeModeStartup) {
+  updateLightingUI(activeModeStartup.led);
+}
 animateLedPreview();
 window.addEventListener('resize', () => { fitDiagram(); fitLighting(); });
 requestAnimationFrame(() => requestAnimationFrame(fitDiagram));

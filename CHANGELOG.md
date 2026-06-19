@@ -5,6 +5,65 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.2] - 2026-06-19
+
+### Changed
+- **New Project Defaults**: Pulled user's local `actions.json` settings (modes, buttons, taps, sensitivities, inversions, and active mode 'Browser') into the project as the new default configuration in `configurator/index.html` and `linapse-service`.
+
+## [2.4.1] - 2026-06-19
+
+### Fixed
+- **NameError in Tests**: Fixed missing `sys` module imports in `test_linapse_socket.py`, `test_linapse_socket_stress.py`, `test_m1_adversarial_bugfix.py`, and `test_m5_adversarial.py`.
+- **Socket Buffer DOS Protection**: Replaced task-spawning drain loop with synchronous writes and a 64KB buffer-size limit check in `_broadcast_socket`, preventing event loop starvation.
+- **Asyncio Sleep Yield**: Added `await asyncio.sleep(0)` yield point to socket broadcasting to ensure other asyncio tasks run under high frequency.
+- **Teardown Thread Leaks**: Updated `started_threads` matching in `custom_init` to filter out internal `asyncio` loop threads, ensuring teardown only waits on daemon threads from `linapse-service`.
+- **Mock Pollution**: Fixed global mock contamination by using `monkeypatch.setattr` in `test_multi_click.py`.
+
+## [2.4.0] - 2026-06-19
+
+### Added
+- **Multi-Click Buttons**: Added support for double/multi-click configuration (e.g. `1×`, `2×`, `3×`+) for physical buttons. High-precision click counting with a 250ms press window, falling back to legacy single key mapping seamlessly and preserving zero-latency for standard scrolls.
+- **Media Action Type**: Added a new action type `"media"` supporting *Play, Pause, Forward, Back, Fast Forward, Rewind, Mute, Volume Up, Volume Down* commands mapped to system keys via `ydotool`.
+- **Discrete Media Keycodes**: Integrated keycodes for play (207), pause (201), and mute (113) into ydotool mappings.
+
+### Changed
+- **Inverted Volume Controls**: Inverted the volume controls for Media Mode so pushing the puck forward increases the volume and pulling it back decreases the volume.
+
+## [2.3.7] - 2026-06-18
+
+### Fixed
+- **Accumulator Poisoning**: Sanitized 6DoF motion coordinates by replacing non-finite values (NaN and Inf) with `0.0` in the serial thread parser.
+- **Robustness**: Updated test cases to verify that non-finite values do not poison the accumulators and that subsequent finite values are processed normally.
+
+## [2.3.6] - 2026-06-18
+
+### Added
+- **Adversarial M3 Tests**: Added a dedicated test suite (`linux/test_m3_adversarial.py`) to stress-test specialized Browser and Media modes suppression, button mapping combos, and boundary coordinate accumulator stability.
+
+## [2.3.5] - 2026-06-18
+
+### Added
+- **Browser and Media Modes**: Implemented Browser and Media modes in host service with custom accumulators for scrolls, scrub, and volume, bypassing raw motion/socket broadcasts.
+- **Media Keys Support**: Added media/volume key codes ("volup", "voldown", "next", "prev", "playpause") to _KEY_CODES.
+
+## [2.3.4] - 2026-06-18
+
+### Added
+- **Configurator UI Integration Tests**: Added a headless VM-based mock DOM test suite (`linux/test_configurator_gui.js`) to verify script parser initialization, nested mode structure migration, dynamic mode creation/renaming/deletion prompts, action selector collection, and profile save/load routines in `configurator/index.html`.
+
+## [2.3.3] - 2026-06-18
+
+### Added
+- **Modes Configurator UI**: Implemented nested mode structure support with `getActiveMode` utility and dynamic configuration migration.
+- **Mode Management UI**: Added Mode Selector Bar dropdown and New Mode, Rename, Delete control actions saving to backend.
+- **Mode Action Type**: Added `mode` type to action list, render sub-fields with mode dropdown, and collect selected mode.
+- **Lighting UI Integration**: Sync active lighting settings to/from the active mode configuration in real-time.
+
+## [2.3.2] - 2026-06-18
+
+### Fixed
+- **Adversarial Tests warnings**: Fixed `ResourceWarning` leaks (unclosed subprocess pipes and un-awaited subprocesses) in `test_sigint_cleanup` and `test_sigterm_cleanup` inside `linux/test_stress.py`.
+
 ## [2.3.1] - 2026-06-18
 
 ### Fixed

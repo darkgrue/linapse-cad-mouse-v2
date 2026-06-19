@@ -24,12 +24,15 @@ except ImportError:
     pytest.skip("websockets is not installed", allow_module_level=True)
 
 # Load the service module
-service_path = Path(__file__).parent / "linapse-service"
-loader = SourceFileLoader("linapse_service", str(service_path))
-spec = importlib.util.spec_from_loader("linapse_service", loader)
-linapse_service = importlib.util.module_from_spec(spec)
-loader.exec_module(linapse_service)
-sys.modules["linapse_service"] = linapse_service
+if "linapse_service" in sys.modules:
+    linapse_service = sys.modules["linapse_service"]
+else:
+    service_path = Path(__file__).parent / "linapse-service"
+    loader = SourceFileLoader("linapse_service", str(service_path))
+    spec = importlib.util.spec_from_loader("linapse_service", loader)
+    linapse_service = importlib.util.module_from_spec(spec)
+    loader.exec_module(linapse_service)
+    sys.modules["linapse_service"] = linapse_service
 
 # Global variables for tracking and controlling background threads
 started_threads = []
@@ -47,7 +50,16 @@ class KillThreadException(BaseException):
     pass
 
 def custom_init(self, *args, **kwargs):
-    started_threads.append(self)
+    is_ours = False
+    target = kwargs.get("target")
+    if target:
+        name = getattr(target, "__name__", "")
+        if name in ("serial_thread", "hid_thread", "config_watcher", "_scroll_loop", "_on_single"):
+            is_ours = True
+    elif isinstance(self, threading.Timer) or self.__class__.__name__ == "Timer":
+        is_ours = True
+    if is_ours:
+        started_threads.append(self)
     original_init(self, *args, **kwargs)
 
 def custom_sleep(seconds):
@@ -196,6 +208,7 @@ def running_service(tmp_path):
     linapse_service._chord_fired = False
     linapse_service._timers.clear()
     linapse_service._scroll_threads.clear()
+    linapse_service.reset_click_states()
     
     patchers = [
         patch("linapse_service.Path", mock_path_factory(temp_socket_path)),
@@ -250,7 +263,8 @@ def running_service(tmp_path):
         
     # Trigger thread exit across all threads by waking them up
     for t in started_threads:
-        t.join(timeout=0.2)
+        t.join(timeout=1.0)
+        assert not t.is_alive(), f"Thread {t} (name={t.name}) failed to exit during teardown!"
         
     # Stop all patchers
     for p in reversed(patchers):
@@ -355,6 +369,14 @@ def test_motion_bounds_scaling_inversion_and_invalid(running_service):
         
         for line in invalid_lines:
             mock_serial.input_queue.put(line)
+            
+        # Since nan, inf, and -inf are sanitized to 0.0 and processed successfully,
+        # they will write three packets of all zeroes to the UNIX socket.
+        # Let's read and verify them.
+        for _ in range(3):
+            data = await asyncio.wait_for(reader.readexactly(32), timeout=1.0)
+            unpacked = struct.unpack("iiiiiiii", data)
+            assert unpacked == (0, 0, 0, 0, 0, 0, 0, 10)
             
         # Send a final valid motion to ensure the loop is still alive and processing correctly
         mock_serial.input_queue.put(b">MOTION:1.0,1.0,1.0,1.0,1.0,1.0\n")
@@ -710,3 +732,118 @@ def test_modes_feature_integration(running_service):
     # 4. Robustness: switching to a non-existent mode does nothing
     linapse_service.switch_mode("NonExistent")
     assert linapse_service._actions_ref[0]["current_mode"] == "Game"
+
+def test_browser_and_media_modes(running_service):
+    """Verify Browser and Media modes configuration, suppression, and accumulation."""
+    loop = running_service["loop"]
+    ws_port = running_service["ws_port"]
+    mock_serial = running_service["mock_serial"]
+    socket_path = running_service["socket_path"]
+    actions_path = running_service["actions_path"]
+    
+    # 1. Verify "Browser" and "Media" are automatically added
+    with open(actions_path) as f:
+        config = json.load(f)
+    assert "Browser" in config["modes"]
+    assert "Media" in config["modes"]
+    
+    # 2. Test WS and UNIX Socket suppression when in Browser mode
+    linapse_service.switch_mode("Browser")
+    assert linapse_service._actions_ref[0]["current_mode"] == "Browser"
+    
+    # Reset accumulators
+    linapse_service._rx_scroll_accumulator = 0.0
+    linapse_service._rz_scrub_accumulator = 0.0
+    linapse_service._rx_volume_accumulator = 0.0
+    
+    global ydotool_calls
+    ydotool_calls.clear()
+    
+    async def run_suppression_test():
+        # Setup WS connection
+        uri = f"ws://localhost:{ws_port}"
+        async with websockets.connect(uri) as ws:
+            # Setup UNIX connection
+            reader, writer = await asyncio.open_unix_connection(str(socket_path))
+            try:
+                # Send motion event
+                mock_serial.input_queue.put(b">MOTION:0,0,0,10.0,0,0\n")
+                
+                # WS should NOT receive any MOTION broadcast. Since we don't expect it, we can send a TAP to verify no motion was broadcast before it.
+                mock_serial.input_queue.put(b"TAP:NegZ:1\n")
+                first_msg = await asyncio.wait_for(ws.recv(), timeout=1.0)
+                # Should be TAP, not MOTION
+                assert first_msg == "TAP:top:1"
+                
+                # UNIX socket should NOT receive any packet.
+                # Let's read with a small timeout to make sure nothing came
+                with pytest.raises(asyncio.TimeoutError):
+                    await asyncio.wait_for(reader.readexactly(32), timeout=0.1)
+            finally:
+                writer.close()
+                await writer.wait_closed()
+                
+    loop.run_until_complete(run_suppression_test())
+    
+    # 3. Test Browser mode accumulators
+    ydotool_calls.clear()
+    linapse_service._rx_scroll_accumulator = 0.0
+    
+    # Accumulate rx scroll: abs(rx) <= 15.0 decays
+    mock_serial.input_queue.put(b">MOTION:0,0,0,10.0,0,0\n")
+    time.sleep(0.05)
+    assert linapse_service._rx_scroll_accumulator == 0.0
+    
+    # Now send values > 15.0 to accumulate
+    mock_serial.input_queue.put(b">MOTION:0,0,0,160.0,0,0\n")
+    time.sleep(0.05)
+    
+    assert len(ydotool_calls) == 1
+    assert ydotool_calls[0] == ["ydotool", "mousemove", "-w", "--", "0", "1"]
+    assert abs(linapse_service._rx_scroll_accumulator - 10.0) < 0.01
+    
+    # Now send negative value to scroll up (exceed -150.0)
+    ydotool_calls.clear()
+    mock_serial.input_queue.put(b">MOTION:0,0,0,-170.0,0,0\n")
+    time.sleep(0.05)
+    assert len(ydotool_calls) == 1
+    assert ydotool_calls[0] == ["ydotool", "mousemove", "-w", "--", "0", "-1"]
+    assert abs(linapse_service._rx_scroll_accumulator - (-10.0)) < 0.01
+
+    # 4. Switch to Media mode and verify accumulators
+    linapse_service.switch_mode("Media")
+    assert linapse_service._actions_ref[0]["current_mode"] == "Media"
+    
+    linapse_service._rz_scrub_accumulator = 0.0
+    linapse_service._rx_volume_accumulator = 0.0
+    ydotool_calls.clear()
+    
+    # Scrub RZ accumulation
+    mock_serial.input_queue.put(b">MOTION:0,0,0,0,0,210.0\n")
+    time.sleep(0.05)
+    assert ydotool_calls[0] == ["ydotool", "key", "106:1", "106:0"]
+    assert abs(linapse_service._rz_scrub_accumulator - 10.0) < 0.01
+    
+    ydotool_calls.clear()
+    mock_serial.input_queue.put(b">MOTION:0,0,0,0,0,-220.0\n")
+    time.sleep(0.05)
+    assert ydotool_calls[0] == ["ydotool", "key", "105:1", "105:0"]
+    assert abs(linapse_service._rz_scrub_accumulator - (-10.0)) < 0.01
+
+    # Volume RX accumulation
+    linapse_service._rx_volume_accumulator = 0.0
+    ydotool_calls.clear()
+    
+    mock_serial.input_queue.put(b">MOTION:0,0,0,260.0,0,0\n")
+    time.sleep(0.05)
+    assert ydotool_calls[0] == ["ydotool", "key", "115:1", "115:0"]
+    assert abs(linapse_service._rx_volume_accumulator - 10.0) < 0.01
+    
+    ydotool_calls.clear()
+    mock_serial.input_queue.put(b">MOTION:0,0,0,-270.0,0,0\n")
+    time.sleep(0.05)
+    assert ydotool_calls[0] == ["ydotool", "key", "114:1", "114:0"]
+    assert abs(linapse_service._rx_volume_accumulator - (-10.0)) < 0.01
+
+    # Switch back to Default mode
+    linapse_service.switch_mode("Default")

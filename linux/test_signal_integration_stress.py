@@ -84,6 +84,7 @@ def setup_service(tmp_path):
     linapse_service._chord_fired = False
     linapse_service._timers.clear()
     linapse_service._scroll_threads.clear()
+    linapse_service.reset_click_states()
     
     patchers = [
         patch("linapse_service.Path", tsi.mock_path_factory(temp_socket_path)),
@@ -147,7 +148,8 @@ def teardown_service(svc):
         
     # Trigger thread exit across all threads by waking them up
     for t in list(tsi.started_threads):
-        t.join(timeout=0.2)
+        t.join(timeout=1.0)
+        assert not t.is_alive(), f"Thread {t} (name={t.name}) failed to exit during teardown!"
         
     # Stop all patchers
     for p in reversed(patchers):

@@ -5,16 +5,20 @@ import struct
 import unittest
 import time
 import socket
+import sys
 import importlib.util
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 
-# Import linapse-service using SourceFileLoader
-service_path = Path(__file__).parent / "linapse-service"
-loader = SourceFileLoader("linapse_service", str(service_path))
-spec = importlib.util.spec_from_loader("linapse_service", loader)
-linapse_service = importlib.util.module_from_spec(spec)
-loader.exec_module(linapse_service)
+if "linapse_service" in sys.modules:
+    linapse_service = sys.modules["linapse_service"]
+else:
+    service_path = Path(__file__).parent / "linapse-service"
+    loader = SourceFileLoader("linapse_service", str(service_path))
+    spec = importlib.util.spec_from_loader("linapse_service", loader)
+    linapse_service = importlib.util.module_from_spec(spec)
+    loader.exec_module(linapse_service)
+    sys.modules["linapse_service"] = linapse_service
 
 class TestLinapseSocketStress(unittest.TestCase):
     def setUp(self):

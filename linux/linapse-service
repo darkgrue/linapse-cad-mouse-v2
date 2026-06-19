@@ -17,6 +17,7 @@ WebSocket protocol (text frames):
 import asyncio
 import glob
 import json
+import math
 import os
 import select
 import signal
@@ -54,10 +55,16 @@ DIR_MAP = {
 _loop: asyncio.AbstractEventLoop = None
 _ws_clients: set = set()
 _socket_clients: set = set()
+_socket_clients_busy: set = set()
 _serial_queue: asyncio.Queue = None
 _ser_holder: list = [None]  # [serial.Serial | None]
 _actions_ref: list = [None]  # [dict | None]
 _config_lock = threading.Lock()
+
+_rx_scroll_accumulator = 0.0
+_rz_scrub_accumulator = 0.0
+_rx_volume_accumulator = 0.0
+
 
 
 # ── Actions ───────────────────────────────────────────────────────────────────
@@ -116,6 +123,7 @@ def load_actions():
         actions = None
         file_existed = False
         parsing_error = False
+        migrated = False
         try:
             if ACTIONS_PATH.exists():
                 file_existed = True
@@ -128,9 +136,92 @@ def load_actions():
                 return _actions_ref[0]
 
         if actions is None or not isinstance(actions, dict):
-            actions = {"button_override": False, "buttons": {}, "taps": {}}
+            actions = {
+                "button_override": False,
+                "sensitivity": {
+                    "x_pos": 1.0, "x_neg": 1.0, "y_pos": 1.0, "y_neg": 1.0, "z_pos": 1.0, "z_neg": 1.0,
+                    "rx_pos": 1.0, "rx_neg": 1.0, "ry_pos": 1.0, "ry_neg": 1.0, "rz_pos": 1.0, "rz_neg": 1.0
+                },
+                "inversion": {
+                    "x": False, "y": False, "z": False, "rx": True, "ry": False, "rz": True
+                },
+                "modes": {
+                    "Default": {
+                        "buttons": {
+                            "0": {"action": "mouse_scroll", "direction": "down", "amount": 1},
+                            "1": {"action": "mouse_scroll", "direction": "up", "amount": 1},
+                            "chord": {"action": "key", "value": "shift+7"}
+                        },
+                        "taps": {
+                            "top:1": {"action": "mouse_click", "button": "left"},
+                            "top:2": {"action": "mode", "value": "Browser"},
+                            "top:3": {"action": "none"},
+                            "left:1": {"action": "none"}, "left:2": {"action": "none"},
+                            "right:1": {"action": "none"}, "right:2": {"action": "none"},
+                            "front:1": {"action": "none"}, "front:2": {"action": "none"},
+                            "back:1": {"action": "none"}, "back:2": {"action": "none"}
+                        },
+                        "led": {
+                            "effect": "rainbow_swirl",
+                            "color": "FFFFFF",
+                            "brightness": 128
+                        }
+                    },
+                    "TargetMode": {
+                        "buttons": {
+                            "0": {"action": "mouse_scroll", "direction": "down", "amount": 1},
+                            "1": {"action": "mouse_scroll", "direction": "up", "amount": 1},
+                            "chord": {"action": "key", "value": "shift+7"}
+                        },
+                        "taps": {
+                            "top:1": {"action": "mouse_click", "button": "left"},
+                            "top:2": {"action": "none"},
+                            "top:3": {"action": "none"},
+                            "left:1": {"action": "none"}, "left:2": {"action": "none"},
+                            "right:1": {"action": "none"}, "right:2": {"action": "none"},
+                            "front:1": {"action": "none"}, "front:2": {"action": "none"},
+                            "back:1": {"action": "none"}, "back:2": {"action": "none"}
+                        },
+                        "led": {
+                            "effect": "solid",
+                            "color": "FFFFFF",
+                            "brightness": 128
+                        }
+                    },
+                    "Browser": {
+                        "buttons": {
+                            "0": {"action": "key", "value": "ctrl+pageup"},
+                            "1": {"action": "key", "value": "ctrl+pagedown"}
+                        },
+                        "taps": {
+                            "top:2": {"action": "mode", "value": "Media"}
+                        },
+                        "led": {
+                            "effect": "solid",
+                            "color": "0000FF",
+                            "brightness": 128
+                        }
+                    },
+                    "Media": {
+                        "buttons": {
+                            "0": {"action": "key", "value": "prev"},
+                            "1": {"action": "key", "value": "next"}
+                        },
+                        "taps": {
+                            "top:2": {"action": "mode", "value": "Default"}
+                        },
+                        "led": {
+                            "effect": "dot_swirl",
+                            "color": "00FF00",
+                            "brightness": 128
+                        }
+                    }
+                },
+                "current_mode": "Browser"
+            }
+            migrated = True
 
-        migrated = False
+        migrated_legacy = False
         if "buttons" in actions or "taps" in actions:
             legacy_buttons = actions.pop("buttons", {})
             legacy_taps = actions.pop("taps", {})
@@ -142,7 +233,38 @@ def load_actions():
                 }
             }
             actions["current_mode"] = "Default"
+            migrated_legacy = True
             migrated = True
+
+        if "modes" not in actions:
+            actions["modes"] = {}
+
+        if "Browser" not in actions["modes"]:
+            actions["modes"]["Browser"] = {
+                "buttons": {
+                    "0": {"action": "key", "value": "ctrl+pageup"},
+                    "1": {"action": "key", "value": "ctrl+pagedown"}
+                },
+                "taps": {
+                    "top:2": {"action": "mode", "value": "Media"}
+                },
+                "led": {"effect": "solid", "color": "0000FF", "brightness": 128}
+            }
+            migrated = True
+
+        if "Media" not in actions["modes"]:
+            actions["modes"]["Media"] = {
+                "buttons": {
+                    "0": {"action": "key", "value": "prev"},
+                    "1": {"action": "key", "value": "next"}
+                },
+                "taps": {
+                    "top:2": {"action": "mode", "value": "Default"}
+                },
+                "led": {"effect": "dot_swirl", "color": "00FF00", "brightness": 128}
+            }
+            migrated = True
+
 
         if migrated and not parsing_error:
             try:
@@ -203,7 +325,16 @@ _KEY_CODES = {
     "\\": 43, "backslash": 43,
     ",": 51, "comma": 51,
     ".": 52, "period": 52,
-    "/": 53, "slash": 53
+    "/": 53, "slash": 53,
+    # Media keys
+    "volup": 115,
+    "voldown": 114,
+    "next": 163,
+    "prev": 165,
+    "playpause": 164,
+    "play": 207,
+    "pause": 201,
+    "mute": 113
 }
 
 def translate_friendly_combo(combo_str: str) -> str:
@@ -237,6 +368,22 @@ def dispatch(action_obj):
         val = action_obj.get("value", "")
         if val:
             switch_mode(val)
+    elif act == "media":
+        cmd = action_obj.get("command", "")
+        media_map = {
+            "play": "play",
+            "pause": "pause",
+            "forward": "next",
+            "back": "prev",
+            "fast_forward": "right",
+            "rewind": "left",
+            "mute": "mute",
+            "volume_up": "volup",
+            "volume_down": "voldown"
+        }
+        key = media_map.get(cmd)
+        if key:
+            dispatch({"action": "key", "value": key})
     elif act == "key":
         val = action_obj.get("value", "")
         if val:
@@ -275,6 +422,23 @@ def dispatch(action_obj):
 
 # ── Button handler ────────────────────────────────────────────────────────────
 
+class ButtonClickState:
+    def __init__(self, btn):
+        self.btn = btn
+        self.click_count = 0
+        self.timer = None
+        self.released = False
+
+_click_states = {0: ButtonClickState(0), 1: ButtonClickState(1)}
+
+def reset_click_states():
+    for state in _click_states.values():
+        if state.timer:
+            state.timer.cancel()
+            state.timer = None
+        state.click_count = 0
+        state.released = False
+
 _held = set()
 _chord_fired = False
 _timers = {}
@@ -283,7 +447,9 @@ _scroll_threads = {}
 def _scroll_loop(btn, stop_event, actions):
     while not stop_event.is_set():
         mode_buttons = get_active_mode_config(actions, "buttons")
-        act = mode_buttons.get(str(btn), {"action": "scroll_down" if btn == 0 else "scroll_up"})
+        act = mode_buttons.get(f"{btn}:1")
+        if not act:
+            act = mode_buttons.get(str(btn), {"action": "scroll_down" if btn == 0 else "scroll_up"})
         dispatch(act)
         time.sleep(SCROLL_INTERVAL)
 
@@ -294,7 +460,9 @@ def _on_single(btn, actions):
     if actions.get("button_override", False):
         return
     mode_buttons = get_active_mode_config(actions, "buttons")
-    act = mode_buttons.get(str(btn), {"action": "scroll_down" if btn == 0 else "scroll_up"})
+    act = mode_buttons.get(f"{btn}:1")
+    if not act:
+        act = mode_buttons.get(str(btn), {"action": "scroll_down" if btn == 0 else "scroll_up"})
     if act.get("action") in ("scroll_up", "scroll_down"):
         stop_event = threading.Event()
         t = threading.Thread(target=_scroll_loop, args=(btn, stop_event, actions), daemon=True)
@@ -309,6 +477,19 @@ def _on_chord(actions):
     act = mode_buttons.get("chord", {"action": "key", "value": "shift+7"})
     dispatch(act)
 
+def _fire_multi_click(btn, count, actions):
+    if _chord_fired:
+        return
+    _broadcast_from_thread(f"BUTTON:{btn}:{count}")
+    if actions.get("button_override", False):
+        return
+    mode_buttons = get_active_mode_config(actions, "buttons")
+    act = mode_buttons.get(f"{btn}:{count}")
+    if not act and count == 1:
+        act = mode_buttons.get(str(btn), {"action": "scroll_down" if btn == 0 else "scroll_up"})
+    if act:
+        dispatch(act)
+
 def _on_press(btn, actions):
     global _chord_fired
     _held.add(btn)
@@ -317,13 +498,32 @@ def _on_press(btn, actions):
         for t in _timers.values():
             t.cancel()
         _timers.clear()
+        for state in _click_states.values():
+            if state.timer:
+                state.timer.cancel()
+                state.timer = None
+            state.click_count = 0
         _on_chord(actions)
         return
-    t = threading.Timer(CHORD_WINDOW, _on_single, args=[btn, actions])
-    _timers[btn] = t
-    t.start()
 
-def _on_release(btn):
+    mode_buttons = get_active_mode_config(actions, "buttons")
+    has_double = f"{btn}:2" in mode_buttons
+
+    if has_double:
+        state = _click_states[btn]
+        if state.timer:
+            state.timer.cancel()
+            state.timer = None
+            state.click_count += 1
+        else:
+            state.click_count = 1
+        state.released = False
+    else:
+        t = threading.Timer(CHORD_WINDOW, _on_single, args=[btn, actions])
+        _timers[btn] = t
+        t.start()
+
+def _on_release(btn, actions=None):
     global _chord_fired
     _held.discard(btn)
     if btn in _timers:
@@ -333,13 +533,33 @@ def _on_release(btn):
         stop_event.set()
     if not _held:
         _chord_fired = False
+
+    if actions is None:
+        actions = _actions_ref[0] or {}
+
+    state = _click_states.get(btn)
+    if state and state.click_count > 0 and not state.released:
+        state.released = True
+        def fire():
+            _fire_multi_click(btn, state.click_count, actions)
+            state.click_count = 0
+            state.timer = None
+        state.timer = threading.Timer(0.25, fire)
+        state.timer.start()
+
     _broadcast_from_thread(f"BUTTON:{btn}:0")
 
 # ── Broadcast helper (thread-safe) ────────────────────────────────────────────
 
 def _broadcast_from_thread(msg: str):
     if _loop:
-        asyncio.run_coroutine_threadsafe(_broadcast(msg), _loop)
+        fut = asyncio.run_coroutine_threadsafe(_broadcast(msg), _loop)
+        def cb(f):
+            try:
+                f.result()
+            except Exception as e:
+                print(f"[broadcast] exception: {e}", flush=True)
+        fut.add_done_callback(cb)
 
 async def _broadcast(msg: str):
     dead = set()
@@ -366,6 +586,7 @@ async def handle_socket_client(reader: asyncio.StreamReader, writer: asyncio.Str
         print(f"[sock] client error: {e}")
     finally:
         _socket_clients.discard(writer)
+        _socket_clients_busy.discard(writer)
         try:
             writer.close()
             await writer.wait_closed()
@@ -373,27 +594,41 @@ async def handle_socket_client(reader: asyncio.StreamReader, writer: asyncio.Str
             pass
         print(f"[sock] client disconnected ({len(_socket_clients)} total)")
 
-async def _send_to_socket_client(writer: asyncio.StreamWriter, packet: bytes):
-    try:
-        writer.write(packet)
-        await asyncio.wait_for(writer.drain(), timeout=0.1)
-    except Exception:
-        _socket_clients.discard(writer)
-        try:
-            writer.close()
-            await writer.wait_closed()
-        except Exception:
-            pass
-
 async def _broadcast_socket(packet: bytes):
     if not _socket_clients:
         return
     for writer in list(_socket_clients):
-        asyncio.create_task(_send_to_socket_client(writer, packet))
+        try:
+            if writer.is_closing():
+                _socket_clients.discard(writer)
+                continue
+            if writer.transport and writer.transport.get_write_buffer_size() > 65536:
+                print(f"[sock] discarding slow client (buffer size={writer.transport.get_write_buffer_size()})")
+                _socket_clients.discard(writer)
+                try:
+                    writer.close()
+                except Exception:
+                    pass
+                continue
+            writer.write(packet)
+        except Exception as e:
+            print(f"[sock] write error: {e}")
+            _socket_clients.discard(writer)
+            try:
+                writer.close()
+            except Exception:
+                pass
+    await asyncio.sleep(0)
 
 def _broadcast_socket_from_thread(packet: bytes):
     if _loop:
-        asyncio.run_coroutine_threadsafe(_broadcast_socket(packet), _loop)
+        fut = asyncio.run_coroutine_threadsafe(_broadcast_socket(packet), _loop)
+        def cb(f):
+            try:
+                f.result()
+            except Exception as e:
+                print(f"[broadcast_socket] exception: {e}", flush=True)
+        fut.add_done_callback(cb)
 
 # ── HID thread ────────────────────────────────────────────────────────────────
 
@@ -446,6 +681,7 @@ def find_serial():
     return m[0] if m else None
 
 def serial_thread(actions_ref):
+    global _rx_scroll_accumulator, _rz_scrub_accumulator, _rx_volume_accumulator
     port = find_serial()
     if not port:
         print("[serial] no serial port found — retrying in 5s")
@@ -494,7 +730,9 @@ def serial_thread(actions_ref):
                                 dispatch(act)
                             _broadcast_from_thread(f"TAP:{human}:{count_str}")
                 elif line.startswith(">MOTION:"):
-                    _broadcast_from_thread(line[1:])  # strip '>' → MOTION:...
+                    current_mode = actions_ref[0].get("current_mode", "Default") if actions_ref[0] else "Default"
+                    if current_mode not in ("Browser", "Media"):
+                        _broadcast_from_thread(line[1:])  # strip '>' → MOTION:...
                     try:
                         parts = line[8:].split(",")
                         if len(parts) == 6:
@@ -502,8 +740,15 @@ def serial_thread(actions_ref):
                             raw_coords = [float(p) for p in parts]
                             x, y, z, rx, ry, rz = raw_coords
                             
+                            if not math.isfinite(x): x = 0.0
+                            if not math.isfinite(y): y = 0.0
+                            if not math.isfinite(z): z = 0.0
+                            if not math.isfinite(rx): rx = 0.0
+                            if not math.isfinite(ry): ry = 0.0
+                            if not math.isfinite(rz): rz = 0.0
+                            
                             # Load sensitivity from config
-                            sens = actions_ref[0].get("sensitivity", {})
+                            sens = actions_ref[0].get("sensitivity", {}) if actions_ref[0] else {}
                             
                             # Scale each axis depending on sign (positive vs negative direction)
                             x = x * sens.get("x_pos" if x >= 0 else "x_neg", 1.0)
@@ -514,7 +759,7 @@ def serial_thread(actions_ref):
                             rz = rz * sens.get("rz_pos" if rz >= 0 else "rz_neg", 1.0)
                             
                             # Apply user-configured axis inversions
-                            inv = actions_ref[0].get("inversion", {})
+                            inv = actions_ref[0].get("inversion", {}) if actions_ref[0] else {}
                             if inv.get("x", False): x = -x
                             if inv.get("y", False): y = -y
                             if inv.get("z", False): z = -z
@@ -522,22 +767,71 @@ def serial_thread(actions_ref):
                             if inv.get("ry", False): ry = -ry
                             if inv.get("rz", False): rz = -rz
 
-                            # Apply direction inversions for spacenav mapping
-                            z = -z
-                            y = -y
-                            
-                            # Round to integers
-                            ix = int(round(x))
-                            iy = int(round(y))
-                            iz = int(round(z))
-                            irx = int(round(rx))
-                            iry = int(round(ry))
-                            irz = int(round(rz))
-                            
-                            period = 10
-                            # Swap Y and Z for both translation and rotation: [0, x, z, y, rx, rz, ry, period]
-                            packet = struct.pack("iiiiiiii", 0, ix, iz, iy, irx, irz, iry, period)
-                            _broadcast_socket_from_thread(packet)
+                            if current_mode == "Browser":
+                                if abs(rx) > 15.0:
+                                    _rx_scroll_accumulator += rx
+                                else:
+                                    _rx_scroll_accumulator *= 0.8
+
+                                if _rx_scroll_accumulator >= 150.0:
+                                    scrolls = int(_rx_scroll_accumulator // 150.0)
+                                    dispatch({"action": "mouse_scroll", "direction": "down", "amount": scrolls})
+                                    _rx_scroll_accumulator -= scrolls * 150.0
+                                elif _rx_scroll_accumulator <= -150.0:
+                                    scrolls = int(-_rx_scroll_accumulator // 150.0)
+                                    dispatch({"action": "mouse_scroll", "direction": "up", "amount": scrolls})
+                                    _rx_scroll_accumulator += scrolls * 150.0
+
+                            elif current_mode == "Media":
+                                if abs(rz) > 15.0:
+                                    _rz_scrub_accumulator += rz
+                                else:
+                                    _rz_scrub_accumulator *= 0.8
+
+                                if _rz_scrub_accumulator >= 200.0:
+                                    presses = int(_rz_scrub_accumulator // 200.0)
+                                    for _ in range(presses):
+                                        dispatch({"action": "key", "value": "right"})
+                                    _rz_scrub_accumulator -= presses * 200.0
+                                elif _rz_scrub_accumulator <= -200.0:
+                                    presses = int(-_rz_scrub_accumulator // 200.0)
+                                    for _ in range(presses):
+                                        dispatch({"action": "key", "value": "left"})
+                                    _rz_scrub_accumulator += presses * 200.0
+
+                                if abs(rx) > 15.0:
+                                    _rx_volume_accumulator += rx
+                                else:
+                                    _rx_volume_accumulator *= 0.8
+
+                                if _rx_volume_accumulator >= 250.0:
+                                    presses = int(_rx_volume_accumulator // 250.0)
+                                    for _ in range(presses):
+                                        dispatch({"action": "key", "value": "volup"})
+                                    _rx_volume_accumulator -= presses * 250.0
+                                elif _rx_volume_accumulator <= -250.0:
+                                    presses = int(-_rx_volume_accumulator // 250.0)
+                                    for _ in range(presses):
+                                        dispatch({"action": "key", "value": "voldown"})
+                                    _rx_volume_accumulator += presses * 250.0
+
+                            if current_mode not in ("Browser", "Media"):
+                                # Apply direction inversions for spacenav mapping
+                                z = -z
+                                y = -y
+                                
+                                # Round to integers
+                                ix = int(round(x))
+                                iy = int(round(y))
+                                iz = int(round(z))
+                                irx = int(round(rx))
+                                iry = int(round(ry))
+                                irz = int(round(rz))
+                                
+                                period = 10
+                                # Swap Y and Z for both translation and rotation: [0, x, z, y, rx, rz, ry, period]
+                                packet = struct.pack("iiiiiiii", 0, ix, iz, iy, irx, irz, iry, period)
+                                _broadcast_socket_from_thread(packet)
                     except Exception as e:
                         print(f"[serial] motion parse/pack error: {e}")
                 elif not line.startswith(">"):

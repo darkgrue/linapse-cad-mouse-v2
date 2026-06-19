@@ -17,12 +17,15 @@ def get_free_port():
         s.bind(('', 0))
         return s.getsockname()[1]
 
-# Load the service module
-service_path = Path(__file__).parent / "linapse-service"
-loader = SourceFileLoader("linapse_service", str(service_path))
-spec = importlib.util.spec_from_loader("linapse_service", loader)
-linapse_service = importlib.util.module_from_spec(spec)
-loader.exec_module(linapse_service)
+if "linapse_service" in sys.modules:
+    linapse_service = sys.modules["linapse_service"]
+else:
+    service_path = Path(__file__).parent / "linapse-service"
+    loader = SourceFileLoader("linapse_service", str(service_path))
+    spec = importlib.util.spec_from_loader("linapse_service", loader)
+    linapse_service = importlib.util.module_from_spec(spec)
+    loader.exec_module(linapse_service)
+    sys.modules["linapse_service"] = linapse_service
 
 class TestAdversarialStress(unittest.TestCase):
     def setUp(self):
@@ -343,18 +346,22 @@ except KeyboardInterrupt:
         
         # Check if the socket file was created
         if not os.path.exists(test_sock):
-            stdout_data, stderr_data = proc.communicate(timeout=1.0)
+            try:
+                stdout_data, stderr_data = proc.communicate(timeout=1.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                stdout_data, stderr_data = proc.communicate()
             self.fail(f"Socket file was not created by the service.\nSTDOUT:\n{stdout_data.decode()}\nSTDERR:\n{stderr_data.decode()}")
         
         # Send SIGINT to the subprocess
         proc.send_signal(signal.SIGINT)
         
-        # Wait for the process to exit
+        # Wait for the process to exit and close pipes
         try:
-            proc.wait(timeout=3.0)
+            stdout_data, stderr_data = proc.communicate(timeout=3.0)
         except subprocess.TimeoutExpired:
             proc.kill()
-            proc.wait()
+            stdout_data, stderr_data = proc.communicate()
             
         # Check if the socket file was cleaned up (unlinked)
         socket_exists = os.path.exists(test_sock)
@@ -427,18 +434,22 @@ except KeyboardInterrupt:
         
         # Check if the socket file was created
         if not os.path.exists(test_sock):
-            stdout_data, stderr_data = proc.communicate(timeout=1.0)
+            try:
+                stdout_data, stderr_data = proc.communicate(timeout=1.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                stdout_data, stderr_data = proc.communicate()
             self.fail(f"Socket file was not created by the service.\nSTDOUT:\n{stdout_data.decode()}\nSTDERR:\n{stderr_data.decode()}")
         
         # Send SIGTERM to the subprocess
         proc.send_signal(signal.SIGTERM)
         
-        # Wait for the process to exit
+        # Wait for the process to exit and close pipes
         try:
-            proc.wait(timeout=3.0)
+            stdout_data, stderr_data = proc.communicate(timeout=3.0)
         except subprocess.TimeoutExpired:
             proc.kill()
-            proc.wait()
+            stdout_data, stderr_data = proc.communicate()
             
         # Check if the socket file was cleaned up (unlinked)
         socket_exists = os.path.exists(test_sock)
