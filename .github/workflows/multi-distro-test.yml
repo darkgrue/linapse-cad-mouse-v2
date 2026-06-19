@@ -69,7 +69,14 @@ jobs:
       - name: Run pytest suite inside container
         run: |
           docker exec -e XDG_RUNTIME_DIR=/run/user/0 -e DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/0/bus \
-            systemd-container sh -c "cd /workspace && pytest linux/"
+            systemd-container sh -c "cd /workspace && pytest linux/ --tb=short 2>&1 | tee pytest_${{ matrix.distro }}_output.log"
+
+      - name: Upload Linux test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-${{ matrix.distro }}-log
+          path: pytest_${{ matrix.distro }}_output.log
 
       - name: Save job status
         if: always()
@@ -101,18 +108,19 @@ jobs:
           pattern: status-*
           merge-multiple: true
 
-      - name: Download Windows test logs on failure
+      - name: Download all test logs on failure
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          name: pytest-windows-log
+          pattern: pytest-*-log
           path: results/logs
+          merge-multiple: true
 
-      - name: Copy Windows test logs if present
+      - name: Copy test failure logs if present
         run: |
-          if [ -d results/logs ] && [ -f results/logs/pytest_output.txt ]; then
+          if [ -d results/logs ]; then
             mkdir -p ci_logs
-            cp results/logs/pytest_output.txt ci_logs/windows_pytest_failure.log
+            cp results/logs/*_output.log ci_logs/ || true
           fi
 
       - name: Show results directory
@@ -162,14 +170,14 @@ jobs:
       - name: Run tests on Windows
         shell: bash
         run: |
-          pytest linux/ --tb=short 2>&1 | tee pytest_output.txt
+          pytest linux/ --tb=short 2>&1 | tee pytest_windows_output.log
 
       - name: Upload Windows test logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: pytest-windows-log
-          path: pytest_output.txt
+          path: pytest_windows_output.log
 
       - name: Compile linapse-service
         run: |
