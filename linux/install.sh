@@ -94,9 +94,22 @@ systemctl --user daemon-reload
 systemctl --user enable --now ydotoold spacenav-ws linapse-service
 info "Services enabled and started."
 
+# ── Application Launcher Menu Shortcut ────────────────────────────────────────
+section "Installing application launcher shortcut"
 
+DESKTOP_DIR="$HOME/.local/share/applications"
+mkdir -p "$DESKTOP_DIR"
 
+# Resolve absolute path to repo directory (one level up from SCRIPT_DIR)
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Replace repository path in template and write to target
+sed -e "s|__REPO_DIR__|$REPO_ROOT|g" \
+    "$SCRIPT_DIR/systemd/linapse-configurator.desktop" \
+    > "$DESKTOP_DIR/linapse-configurator.desktop"
+
+chmod +x "$DESKTOP_DIR/linapse-configurator.desktop"
+info "Installed launcher shortcut to $DESKTOP_DIR/linapse-configurator.desktop"
 
 # ── Environment Setup ────────────────────────────────────────────────────────
 section "Configuring user systemd environment for native applications"

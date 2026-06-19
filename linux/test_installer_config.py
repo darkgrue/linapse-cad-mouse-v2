@@ -69,10 +69,15 @@ class TestInstallerConfig(unittest.TestCase):
         except Exception as e:
             self.fail(f"Failed to parse installer.iss as INI: {e}")
 
+        # Read expected version from VERSION file
+        version_path = self.repo_dir / "VERSION"
+        with open(version_path, "r") as f:
+            expected_version = f.read().strip()
+
         # Check [Setup] settings
         setup = dict(parser.items("Setup"))
         self.assertEqual(setup.get("appname"), "Linapse CAD Mouse Service")
-        self.assertEqual(setup.get("appversion"), "2.5.4")
+        self.assertEqual(setup.get("appversion"), expected_version)
         self.assertEqual(setup.get("defaultdirname"), "{autopf}\\LinapseCADMouse")
         self.assertEqual(setup.get("defaultgroupname"), "Linapse CAD Mouse")
         self.assertEqual(setup.get("outputdir"), ".")

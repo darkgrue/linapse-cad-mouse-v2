@@ -1,6 +1,6 @@
 {
   "name": "linapse-configurator",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "CAD Mouse MK2 Linapse Web Configurator",
   "main": "main.js",
   "scripts": {
@@ -41,6 +41,13 @@
     },
     "win": {
       "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Linapse Configurator"
     },
     "mac": {
       "target": "dmg"

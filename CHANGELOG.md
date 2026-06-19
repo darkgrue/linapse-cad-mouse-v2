@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.1] - 2026-06-19
+
+### Added
+- **Start Menu / App Launcher Shortcuts**:
+  - Integrated `linapse-configurator.desktop` generator for Linux to add the Electron configurator to the applications/start menu.
+  - Added Start Menu shortcut configuration to `installer.iss` for the Windows service executable.
+  - Configured explicit NSIS Start Menu and Desktop shortcut options in `configurator/package.json` for the Electron Windows builder.
+
 ## [2.6.0] - 2026-06-19
 
 ### Added
