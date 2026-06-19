@@ -850,6 +850,7 @@ input[type=range]::-webkit-slider-thumb {
   <div class="tab active" onclick="switchTab('customize', this)">Customize</div>
   <div class="tab" onclick="switchTab('lighting', this)">Lighting</div>
   <div class="tab" onclick="switchTab('sensitivity', this)">Sensitivity</div>
+  <div class="tab" onclick="switchTab('firmware', this)">Firmware</div>
 </div>
 
 <!-- Mode Selector Bar -->
@@ -1281,8 +1282,57 @@ input[type=range]::-webkit-slider-thumb {
         <button class="btn-apply" onclick="sensReset()">Reset to Defaults</button>
 
       </div>
-    </div>
+  </div><!-- /tab-sensitivity -->
 
+  <!-- FIRMWARE TAB -->
+  <div class="tab-content" id="tab-firmware" style="padding: 40px; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; gap: 24px; width: 100%; box-sizing: border-box;">
+    <div style="max-width: 600px; width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 30px; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box;">
+      
+      <div style="border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+        <h2 style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: 2px; color: var(--green); margin: 0; text-transform: uppercase;">Firmware Flasher</h2>
+        <p style="font-size: 11px; color: var(--text3); margin: 5px 0 0 0; text-transform: uppercase; letter-spacing: 1px;">Compile and Flash CAD Mouse MK2 Firmware</p>
+      </div>
+
+      <div style="font-size: 13px; color: var(--text2); line-height: 1.6; display: flex; flex-direction: column; gap: 12px;">
+        <p>This utility compiles the latest firmware source code using <strong>PlatformIO</strong> and copies the output <code>firmware.uf2</code> file to the RP2040 chip on your CAD Mouse.</p>
+        
+        <div style="background: rgba(0, 255, 136, 0.03); border: 1px dashed var(--green); border-radius: 6px; padding: 15px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 1.5px; color: var(--green); text-transform: uppercase;">Device Compatibility</span>
+            <span style="font-size: 10px; background: var(--green-dim); color: #fff; padding: 2px 6px; border-radius: 2px; text-transform: uppercase; font-family: 'Barlow Condensed'; font-weight: 600;">Cross-Platform</span>
+          </div>
+          <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: var(--text2); display: flex; flex-direction: column; gap: 4px;">
+            <li><strong>Flashed device:</strong> The tool automatically resets the device to BOOTSEL mode via serial port.</li>
+            <li><strong>Fresh device (out of the box):</strong> If device is in BOOTSEL mode, the tool automatically detects and mounts the RPI-RP2 drive.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 15px; align-items: center; margin-top: 10px;">
+        <button id="btnFlashFirmware" class="btn-apply" onclick="startFirmwareFlash()" style="margin: 0; flex: 1; height: 44px; font-size: 14px; letter-spacing: 2px; cursor: pointer; text-transform: uppercase;">
+          Start Firmware Flash
+        </button>
+      </div>
+
+      <!-- Flash Console / Status Window -->
+      <div id="flashConsoleContainer" style="display: none; flex-direction: column; gap: 8px; margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 1.5px; color: var(--green); text-transform: uppercase;">Flashing Progress</span>
+          <span id="flashStatusLabel" style="font-size: 11px; color: var(--text2); font-family: monospace; text-transform: uppercase; font-weight: bold;">Idle</span>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div style="width: 100%; height: 6px; background: var(--border2); border-radius: 3px; overflow: hidden; position: relative;">
+          <div id="flashProgressBar" style="width: 0%; height: 100%; background: var(--green); transition: width 0.3s ease;"></div>
+        </div>
+
+        <!-- Terminal Output -->
+        <div id="flashTerminal" style="height: 150px; background: #000; border: 1px solid var(--border); border-radius: 4px; padding: 10px; font-family: monospace; font-size: 11px; color: #00ff88; overflow-y: auto; white-space: pre-wrap; line-height: 1.4; border-top: 2px solid var(--border);">
+          Waiting for user to start flashing...
+        </div>
+      </div>
+
+    </div>
   </div>
 
 </div>
@@ -2353,6 +2403,10 @@ function connectWS() {
 
   ws.onmessage = (e) => {
     const msg = e.data.trim();
+    if (msg.startsWith('FLASH:')) {
+      handleFlashMessage(msg);
+      return;
+    }
     if (msg.startsWith('MOTION:')) {
       const vals = msg.slice(7).split(',').map(Number);
       if (vals.length === 6) applyMotion(vals);
@@ -3272,6 +3326,66 @@ function showToast(title, message, actionText) {
       toast.remove();
     }, 350);
   }, 4000);
+}
+
+function startFirmwareFlash() {
+  const term = document.getElementById('flashTerminal');
+  const pbar = document.getElementById('flashProgressBar');
+  const btn = document.getElementById('btnFlashFirmware');
+  const consoleContainer = document.getElementById('flashConsoleContainer');
+  
+  consoleContainer.style.display = 'flex';
+  term.innerHTML = 'Initiating firmware flash sequence...';
+  pbar.style.width = '0%';
+  pbar.style.background = 'var(--green)';
+  btn.disabled = true;
+  btn.textContent = 'Flashing...';
+  
+  sendCmd('flash');
+}
+
+function handleFlashMessage(msg) {
+  const parts = msg.split(':', 3);
+  if (parts.length < 3) return;
+  const type = parts[1];
+  const text = parts[2];
+  
+  const consoleContainer = document.getElementById('flashConsoleContainer');
+  const term = document.getElementById('flashTerminal');
+  const statusLabel = document.getElementById('flashStatusLabel');
+  const pbar = document.getElementById('flashProgressBar');
+  const btn = document.getElementById('btnFlashFirmware');
+  
+  consoleContainer.style.display = 'flex';
+  statusLabel.textContent = type.toUpperCase();
+  
+  // Append to terminal
+  const timestamp = new Date().toLocaleTimeString();
+  term.innerHTML += `\n[${timestamp}] [${type.toUpperCase()}] ${text}`;
+  term.scrollTop = term.scrollHeight;
+  
+  if (type === 'status') {
+    statusLabel.style.color = 'var(--text)';
+    if (text.includes('repository')) pbar.style.width = '15%';
+    else if (text.includes('PlatformIO')) pbar.style.width = '35%';
+    else if (text.includes('BOOTSEL')) pbar.style.width = '55%';
+    else if (text.includes('RPI-RP2')) pbar.style.width = '75%';
+    else if (text.includes('Copying')) pbar.style.width = '90%';
+  } else if (type === 'error') {
+    statusLabel.style.color = '#ff4a4a';
+    pbar.style.width = '100%';
+    pbar.style.background = '#ff4a4a';
+    btn.disabled = false;
+    btn.textContent = 'Retry Flash';
+    showToast('Flash Failed', text, 'error');
+  } else if (type === 'success') {
+    statusLabel.style.color = 'var(--green)';
+    pbar.style.width = '100%';
+    pbar.style.background = 'var(--green)';
+    btn.disabled = false;
+    btn.textContent = 'Start Firmware Flash';
+    showToast('Flash Successful', text, 'ok');
+  }
 }
 
 initCallouts();

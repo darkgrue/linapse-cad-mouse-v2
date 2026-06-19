@@ -33,7 +33,7 @@ linapse-service    — bridges serial/HID inputs, translates buttons/taps via yd
 
 ## Firmware
 
-Before running the installer, flash the firmware. Build and copy the firmware:
+Before running the installer, flash the firmware. You can do this easily from the **Firmware** tab in the **Linapse Configurator** UI (which compiles and flashes automatically), or manually:
 1. Hold **B**, tap **R** on the XIAO RP2040 to enter BOOTSEL mode (or hold B while plugging in)
 2. Build and copy the firmware: `pio run && sudo mount /dev/sdX1 /mnt && sudo cp .pio/build/seeed_xiao_rp2040/firmware.uf2 /mnt/ && sudo umount /mnt`
 

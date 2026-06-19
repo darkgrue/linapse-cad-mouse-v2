@@ -148,3 +148,14 @@ The exponent slider is labelled **Linear → Cubic → Steep**: low values give 
 ## Profiles
 
 The footer's **Save Profile** / **Load Profile** export and import the complete configuration — button/tap maps, lighting, and sensitivity — as a single JSON file. Save a profile per workflow (e.g. one for OnShape, one for FreeCAD) and load on demand.
+
+---
+
+## Firmware — flashing
+
+The **Firmware** tab lets you compile and flash the CAD Mouse MK2 firmware directly from the configurator.
+
+- **Firmware Compilation**: Uses PlatformIO to compile the source code in the repository.
+- **Auto-BOOTSEL Reset**: Automatically detects connected devices and puts them into BOOTSEL mode over the serial link (using a 1200 baud reset).
+- **Fresh Board Flashing**: If a board has never been flashed before (or is in bootloader mode already), the configurator will automatically search for the `RPI-RP2` block drive, mount it (using `udisksctl` on Linux), copy `firmware.uf2`, and reboot it.
+- **Flashing Console**: A cyberpunk-themed console logs progress in real time, from locating repo roots and invoking PlatformIO to mounting and writing files.
