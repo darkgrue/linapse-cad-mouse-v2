@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-06-19
+
+### Added
+- **Electron Webapp Wrapper**: Added a cross-platform Electron shell container for the web configurator located in `configurator/`.
+- **Auto-Updater Integration**: Configured `electron-updater` targeting GitHub releases (`spikeon/linapse-cad-mouse-v2`) for seamless, serverless background updates.
+
 ## [2.5.10] - 2026-06-19
 
 ### Fixed

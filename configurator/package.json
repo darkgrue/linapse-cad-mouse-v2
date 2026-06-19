@@ -1,0 +1,52 @@
+{
+  "name": "linapse-configurator",
+  "version": "2.6.0",
+  "description": "CAD Mouse MK2 Linapse Web Configurator",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "author": "spikeon",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "electron-updater": "^6.2.1"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.linapse.configurator",
+    "productName": "Linapse Configurator",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "spikeon",
+        "repo": "linapse-cad-mouse-v2"
+      }
+    ],
+    "files": [
+      "index.html",
+      "main.js",
+      "linapse-header-logo.png",
+      "device-render.png",
+      "ring-mask.png",
+      "benchy.step",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
