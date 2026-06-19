@@ -43,4 +43,9 @@ Whenever a new feature is added to the codebase, you MUST:
 1. **Write or update documentation** under the `docs/` folder explaining the new feature, its architecture, integration details, and usage.
 2. **Update the main README.md** (and other relevant readmes, e.g. `service/README.md`) to call out the new capability and link to the detailed documentation.
 
+## Playwright Integration Testing
+
+Do NOT recommend disabling Playwright tests or marking them as slow to skip by default. They are the most important tests for ensuring correct behavior across all distributions.
+
+
 

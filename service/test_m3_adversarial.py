@@ -271,3 +271,49 @@ def test_m3_accumulator_stress_boundaries(running_service):
     mock_serial.input_queue.put(b">MOTION:0,0,0,inf,0,0\n")
     time.sleep(0.02)
     assert abs(linapse_service._rx_volume_accumulator - 8.0) < 0.01
+
+def test_m3_websocket_origin_check(running_service):
+    """
+    Verify Origin header validation in the WebSocket server.
+    Legitimate local origins must be accepted, while remote origins must be rejected.
+    """
+    loop = running_service["loop"]
+    ws_port = running_service["ws_port"]
+    
+    import websockets
+    from websockets.exceptions import InvalidStatusCode, ConnectionClosed
+    
+    async def run_origin_test():
+        uri = f"ws://localhost:{ws_port}"
+        
+        # 1. legitimate origin (localhost) should succeed
+        async with websockets.connect(uri, additional_headers={"Origin": "http://localhost:7890"}) as ws:
+            await ws.send("actions_get")
+            resp = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            assert resp.startswith("ACTIONS:")
+            
+        # 2. legitimate origin (127.0.0.1) should succeed
+        async with websockets.connect(uri, additional_headers={"Origin": "http://127.0.0.1:3000"}) as ws:
+            await ws.send("actions_get")
+            resp = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            assert resp.startswith("ACTIONS:")
+
+        # 3. legitimate origin (file://) should succeed
+        async with websockets.connect(uri, additional_headers={"Origin": "file://path/to/index.html"}) as ws:
+            await ws.send("actions_get")
+            resp = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            assert resp.startswith("ACTIONS:")
+
+        # 4. legitimate origin (null) should succeed
+        async with websockets.connect(uri, additional_headers={"Origin": "null"}) as ws:
+            await ws.send("actions_get")
+            resp = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            assert resp.startswith("ACTIONS:")
+
+        # 5. malicious origin should fail
+        with pytest.raises((InvalidStatusCode, ConnectionClosed)):
+            async with websockets.connect(uri, additional_headers={"Origin": "http://malicious.com"}) as ws:
+                await ws.send("actions_get")
+                await asyncio.wait_for(ws.recv(), timeout=1.0)
+
+    loop.run_until_complete(run_origin_test())

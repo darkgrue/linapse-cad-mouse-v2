@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.5] - 2026-06-19
+
+### Added
+- **Origin Validation Tests**: Added `test_m3_websocket_origin_check` unit test in `service/test_m3_adversarial.py` to verify local origin validation.
+
+### Security
+- **WebSocket Origin Validation**: Added robust `Origin` header verification in `ws_handler` supporting legacy and v14+ websockets libraries, blocking unauthorized remote websites.
+
+### Fixed
+- **Cross-Platform Flashing Mounts**: Implemented native mount detection for macOS (`/Volumes/RPI-RP2`) and Windows (checking volume name `RPI-RP2` across drive letters via `ctypes`) in `locate_or_mount_rpi_rp2`.
+
+## [2.8.4] - 2026-06-19
+
+### Changed
+- **Adaptive Volume Polling**: Optimized system volume synchronization to use 1s polling interval by default, temporarily scaling to 250ms for 10s only when active changes are detected.
+- **Playwright Test Policy**: Updated `.agents/AGENTS.md` project rules to forbid disabling or bypass marking of critical Playwright GUI integration tests.
+
 ## [2.8.3] - 2026-06-19
 
 ### Added
