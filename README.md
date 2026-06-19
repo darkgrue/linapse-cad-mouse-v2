@@ -1,11 +1,16 @@
+<p align="center">
+  <img src="docs/images/linapse-banner-transparent.png" alt="Linapse Banner" width="600">
+</p>
+
 # Linapse — CAD Mouse MK2 (v2)
 
 <!-- DISTRO_BADGES_START -->
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-failing-critical)](#) [![Debian](https://img.shields.io/badge/Debian-failing-critical)](#) [![Fedora](https://img.shields.io/badge/Fedora-failing-critical)](#) [![Windows](https://img.shields.io/badge/Windows-failing-critical)](#) [![macOS](https://img.shields.io/badge/macOS-failing-critical)](#)
 <!-- DISTRO_BADGES_END -->
 
-[![Windows Setup](https://img.shields.io/badge/Windows-v2.5.7-0078D6?logo=windows&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe)
-[![macOS Package](https://img.shields.io/badge/macOS-v2.5.7-000000?logo=apple&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/linapse-service.pkg)
+[![Windows Setup](https://img.shields.io/badge/Windows-v2.5.9-0078D6?logo=windows&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe)
+[![macOS Package](https://img.shields.io/badge/macOS-v2.5.9-000000?logo=apple&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/linapse-service.pkg)
+
 
 **Linapse** is a cross-platform software stack (supporting Linux, Windows, and macOS) for the [CAD Mouse MK2](https://github.com/sb-ocr/cad-mouse-mk2) — a DIY 6-degrees-of-freedom "space mouse" that senses motion with three magnetic field sensors instead of optics. Since the hardware has no official drivers from 3Dconnexion, this project supplies everything needed to make it a first-class input device on Linux, Windows, and macOS: device firmware, a host-side service, and a web configurator.
 
