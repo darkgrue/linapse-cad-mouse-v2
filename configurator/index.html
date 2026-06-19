@@ -850,7 +850,10 @@ input[type=range]::-webkit-slider-thumb {
   <div class="tab active" onclick="switchTab('customize', this)">Customize</div>
   <div class="tab" onclick="switchTab('lighting', this)">Lighting</div>
   <div class="tab" onclick="switchTab('sensitivity', this)">Sensitivity</div>
-  <div class="tab" onclick="switchTab('firmware', this)">Firmware</div>
+  <div class="tab" onclick="switchTab('firmware', this)" style="position: relative; display: flex; align-items: center; gap: 6px;">
+    Firmware
+    <span id="fwBadge" style="display: none; width: 8px; height: 8px; background-color: #ff4a4a; border-radius: 50%;"></span>
+  </div>
 </div>
 
 <!-- Mode Selector Bar -->
@@ -1282,10 +1285,23 @@ input[type=range]::-webkit-slider-thumb {
         <button class="btn-apply" onclick="sensReset()">Reset to Defaults</button>
 
       </div>
+    </div>
   </div><!-- /tab-sensitivity -->
 
   <!-- FIRMWARE TAB -->
   <div class="tab-content" id="tab-firmware" style="padding: 40px; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; gap: 24px; width: 100%; box-sizing: border-box;">
+    <!-- Update Notice Container -->
+    <div id="fwUpdateNotice" style="display: none; max-width: 600px; width: 100%; background: rgba(255, 74, 74, 0.1); border: 1px solid #ff4a4a; border-radius: 8px; padding: 20px; box-sizing: border-box; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 10px; color: #ff4a4a; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">
+        <span style="font-size: 20px;">⚠️</span> Firmware Update Recommended
+      </div>
+      <p style="font-size: 13px; color: var(--text2); margin: 0; line-height: 1.5;">
+        Your CAD Mouse is running firmware <strong id="currentFwVersion">unknown</strong>. 
+        The latest firmware version is <strong id="latestFwVersion">2.9.2</strong>. 
+        Please update the firmware to enable new features like the <strong>Volume</strong> lighting effect and other enhancements.
+      </p>
+    </div>
+
     <div style="max-width: 600px; width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 30px; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box;">
       
       <div style="border-bottom: 1px solid var(--border); padding-bottom: 15px;">
@@ -1297,6 +1313,10 @@ input[type=range]::-webkit-slider-thumb {
         <p>This utility compiles the latest firmware source code using <strong>PlatformIO</strong> and copies the output <code>firmware.uf2</code> file to the RP2040 chip on your CAD Mouse.</p>
         
         <div style="background: rgba(0, 255, 136, 0.03); border: 1px dashed var(--green); border-radius: 6px; padding: 15px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(0, 255, 136, 0.2); padding-bottom: 8px; margin-bottom: 4px;">
+            <span style="font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 1.5px; color: var(--green); text-transform: uppercase;">Device Status</span>
+            <span id="fwStatusBadge" style="font-size: 10px; background: var(--green-dim); color: #fff; padding: 2px 6px; border-radius: 2px; text-transform: uppercase; font-family: 'Barlow Condensed'; font-weight: 600;">Detecting...</span>
+          </div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 1.5px; color: var(--green); text-transform: uppercase;">Device Compatibility</span>
             <span style="font-size: 10px; background: var(--green-dim); color: #fff; padding: 2px 6px; border-radius: 2px; text-transform: uppercase; font-family: 'Barlow Condensed'; font-weight: 600;">Cross-Platform</span>
@@ -1447,7 +1467,7 @@ const DEFAULT_ACTIONS = {
         "top:2": {"action": "mode", "value": "Default"}
       },
       led: {
-        effect: "dot_swirl",
+        effect: "volume",
         color: "00FF00",
         brightness: 128
       }
@@ -2390,6 +2410,7 @@ function connectWS() {
     setStatus('Connected', 'ok');
     sendCmd('config get');
     sendCmd('actions_get');
+    sendCmd('version_get');
   };
 
   ws.onclose = () => {
@@ -2397,6 +2418,7 @@ function connectWS() {
     setConnected(false);
     setStatus('linapse-service not running', 'err');
     wsReconnectTimer = setTimeout(connectWS, 3000);
+    handleVersionInfo({ service: '2.9.0', firmware: 'unknown' });
   };
 
   ws.onerror = () => {};  // onclose fires after onerror
@@ -2405,6 +2427,15 @@ function connectWS() {
     const msg = e.data.trim();
     if (msg.startsWith('FLASH:')) {
       handleFlashMessage(msg);
+      return;
+    }
+    if (msg.startsWith('VERSION_INFO:')) {
+      try {
+        const info = JSON.parse(msg.slice(13));
+        handleVersionInfo(info);
+      } catch (err) {
+        console.error('Failed to parse VERSION_INFO:', err);
+      }
       return;
     }
     if (msg.startsWith('MOTION:')) {
@@ -3386,6 +3417,53 @@ function handleFlashMessage(msg) {
     btn.textContent = 'Start Firmware Flash';
     showToast('Flash Successful', text, 'ok');
   }
+}
+
+let serviceVersion = '2.9.2';
+let firmwareVersion = 'unknown';
+
+function handleVersionInfo(info) {
+  serviceVersion = info.service || '2.9.2';
+  firmwareVersion = info.firmware || 'unknown';
+  
+  const badge = document.getElementById('fwBadge');
+  const notice = document.getElementById('fwUpdateNotice');
+  const currentFw = document.getElementById('currentFwVersion');
+  const latestFw = document.getElementById('latestFwVersion');
+  const statusBadge = document.getElementById('fwStatusBadge');
+  
+  if (currentFw) currentFw.textContent = firmwareVersion;
+  if (latestFw) latestFw.textContent = serviceVersion;
+  
+  const isOutOfDate = (firmwareVersion === 'unknown' || firmwareVersion === 'legacy' || compareVersions(firmwareVersion, serviceVersion) < 0);
+  
+  if (isOutOfDate) {
+    if (badge) badge.style.display = 'block';
+    if (notice) notice.style.display = 'flex';
+    if (statusBadge) {
+      statusBadge.textContent = 'Update Required (' + firmwareVersion + ')';
+      statusBadge.style.background = '#ff4a4a';
+    }
+  } else {
+    if (badge) badge.style.display = 'none';
+    if (notice) notice.style.display = 'none';
+    if (statusBadge) {
+      statusBadge.textContent = 'Up to Date (' + firmwareVersion + ')';
+      statusBadge.style.background = 'var(--green-dim)';
+    }
+  }
+}
+
+function compareVersions(v1, v2) {
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const p1 = parts1[i] || 0;
+    const p2 = parts2[i] || 0;
+    if (p1 < p2) return -1;
+    if (p1 > p2) return 1;
+  }
+  return 0;
 }
 
 initCallouts();

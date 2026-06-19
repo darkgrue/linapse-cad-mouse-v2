@@ -299,6 +299,17 @@ def test_benchy_viewport_motion_and_toasts(tmp_path):
                 page.evaluate("() => { const b = benchyScene.benchy; b.position.set(0, 0, 0); b.rotation.set(0, 0, 0); }")
                 time.sleep(0.05)
 
+            # Helper to read actions config safely with retries
+            def read_saved_actions():
+                for attempt in range(10):
+                    try:
+                        with open(temp_actions_path, "r") as f:
+                            return json.load(f)
+                    except (PermissionError, json.JSONDecodeError):
+                        time.sleep(0.05)
+                with open(temp_actions_path, "r") as f:
+                    return json.load(f)
+
             # We test all 5 visible axes: X, Z (which maps to Y on screen), RX, RY, RZ
             # For each axis, we verify movement direction under normal configuration,
             # then verify that enabling inversion results in movement in the opposite direction.
@@ -342,8 +353,7 @@ def test_benchy_viewport_motion_and_toasts(tmp_path):
                 # --- 2. Enable inversion and verify configuration saves to disk ---
                 page.click(selector)
                 time.sleep(0.3)
-                with open(temp_actions_path, "r") as f:
-                    saved_actions = json.load(f)
+                saved_actions = read_saved_actions()
                 assert saved_actions.get("inversion", {}).get(name.lower()) is True, f"{name} inversion failed to save on disk"
 
                 # --- 3. Test inverted movement ---
@@ -378,22 +388,19 @@ def test_benchy_viewport_motion_and_toasts(tmp_path):
                 # --- 4. Turn inversion back off ---
                 page.click(selector)
                 time.sleep(0.3)
-                with open(temp_actions_path, "r") as f:
-                    saved_actions = json.load(f)
+                saved_actions = read_saved_actions()
                 assert not saved_actions.get("inversion", {}).get(name.lower()), f"{name} inversion failed to untoggle on disk"
 
             # --- 5. Test Y Axis inversion updates actions on disk ---
             page.click("#invY")
             time.sleep(0.3)
-            with open(temp_actions_path, "r") as f:
-                saved_actions = json.load(f)
+            saved_actions = read_saved_actions()
             assert saved_actions.get("inversion", {}).get("y") is True, f"Y inversion failed to save on disk: {saved_actions}"
 
             # Untoggle Y Inversion
             page.click("#invY")
             time.sleep(0.3)
-            with open(temp_actions_path, "r") as f:
-                saved_actions = json.load(f)
+            saved_actions = read_saved_actions()
             assert not saved_actions.get("inversion", {}).get("y"), f"Y inversion failed to untoggle on disk: {saved_actions}"
             
 

@@ -74,6 +74,7 @@ def serial_thread(actions_ref):
                         ser.write(f"led effect {effect}\n".encode())
                         ser.write(f"led color {color}\n".encode())
                         ser.write(f"led brightness {brightness}\n".encode())
+                        ser.write(b"version\n")
                     except Exception as e:
                         print(f"[serial] failed to write initial LED commands: {e}")
                         
@@ -167,7 +168,7 @@ def serial_thread(actions_ref):
                                     _rz_scrub_accumulator += presses * 200.0
 
                                 if abs(rx) > 15.0:
-                                    _rx_volume_accumulator += rx
+                                    _rx_volume_accumulator -= rx
                                 else:
                                     _rx_volume_accumulator *= 0.8
 
@@ -203,6 +204,9 @@ def serial_thread(actions_ref):
                         print(f"[serial] motion parse/pack error: {e}")
                 elif not line.startswith(">"):
                     # Command response (OK, ERR ..., JSON from config get, etc.)
+                    if line.startswith("version="):
+                        state.firmware_version = line.split("=")[1].strip()
+                        state.broadcast_from_thread(f"VERSION_INFO:{{\"service\":\"{state.service_version}\",\"firmware\":\"{state.firmware_version}\"}}")
                     state.broadcast_from_thread(line)
         except serial.SerialException as e:
             state.ser_holder[0] = None

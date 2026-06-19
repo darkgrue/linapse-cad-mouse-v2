@@ -836,14 +836,14 @@ def test_browser_and_media_modes(running_service):
     
     mock_serial.input_queue.put(b">MOTION:0,0,0,260.0,0,0\n")
     time.sleep(0.05)
-    assert ydotool_calls[0] == ["ydotool", "key", "115:1", "115:0"]
-    assert abs(linapse_service._rx_volume_accumulator - 10.0) < 0.01
+    assert ydotool_calls[0] == ["ydotool", "key", "114:1", "114:0"]
+    assert abs(linapse_service._rx_volume_accumulator - (-10.0)) < 0.01
     
     ydotool_calls.clear()
     mock_serial.input_queue.put(b">MOTION:0,0,0,-270.0,0,0\n")
     time.sleep(0.05)
-    assert ydotool_calls[0] == ["ydotool", "key", "114:1", "114:0"]
-    assert abs(linapse_service._rx_volume_accumulator - (-10.0)) < 0.01
+    assert ydotool_calls[0] == ["ydotool", "key", "115:1", "115:0"]
+    assert abs(linapse_service._rx_volume_accumulator - 10.0) < 0.01
 
     # Switch back to Default mode
     linapse_service.switch_mode("Default")

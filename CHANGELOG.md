@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.2] - 2026-06-19
+
+### Fixed
+- **Firmware Tab Blank Screen**: Fixed a layout bug where the Firmware tab displayed a blank screen due to `#tab-firmware` being incorrectly nested inside `#tab-sensitivity` from an unclosed `side-panel` div.
+
+## [2.9.1] - 2026-06-19
+
+### Added
+- **Workspace Rule**: Added a workspace-scoped guideline to `.agents/AGENTS.md` establishing the commit-push-wait retry loop for fixing CI/CD errors and failures.
+
+## [2.9.0] - 2026-06-19
+
+### Added
+- **Firmware Version Checking**: Added support to query, parse, and check the device firmware version over serial connection.
+- **Out-of-Date Notification Badge**: Configured a red notification badge on the Firmware tab to alert when the firmware needs an update.
+- **Update Warning Notice**: Added a warning notice block inside the Firmware tab detailing current and latest firmware versions when out-of-date.
+- **Firmware Device Status**: Displayed active firmware version status (e.g. "Up to Date" or "Update Required") directly in the Flashing UI.
+
+## [2.8.7] - 2026-06-19
+
+### Fixed
+- **Inverted Volume Control**: Corrected volume adjustment direction on RX axis so pushing down (positive rx) decreases system volume and pulling up (negative rx) increases volume.
+- **Media Mode default LED effect**: Fixed default configuration to use the dedicated `volume` LED effect instead of `dot_swirl` for the Media mode.
+- **Config Migration**: Added migration logic to automatically upgrade existing user configurations using `dot_swirl` under Media mode's LED config to the correct `volume` effect.
+- **Windows Test Reliability**: Implemented retry logic with brief backoffs in configuration read/write operations to prevent transient PermissionErrors from Windows file locking.
+- **Playwright Test Stability**: Added a retry-safe configuration reading helper to the integration test suite to handle transient lock conditions.
+
 ## [2.8.6] - 2026-06-19
 
 ### Changed

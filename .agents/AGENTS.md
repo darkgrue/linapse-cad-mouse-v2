@@ -47,5 +47,14 @@ Whenever a new feature is added to the codebase, you MUST:
 
 Do NOT recommend disabling Playwright tests or marking them as slow to skip by default. They are the most important tests for ensuring correct behavior across all distributions.
 
+## CI/CD Failure Fixing Loop
+
+When fixing CI/CD errors or failures:
+1. **Commit and Push**: After implementing your proposed fix, stage and commit the changes, then push them to trigger the CI/CD pipeline.
+2. **Wait and Verify**: Wait for the CI/CD run to complete and verify the results.
+3. **Retry on Failure**: If the run fails, analyze the new failures, adjust your implementation, and repeat the commit-push-wait loop.
+4. **Iterate to Success**: Continue this process until the CI/CD pipeline succeeds. If appropriate, recommend or utilize the `/goal` command to ensure thorough, multi-turn tracking.
+
+
 
 

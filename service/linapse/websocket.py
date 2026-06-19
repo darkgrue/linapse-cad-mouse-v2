@@ -36,6 +36,8 @@ async def ws_handler(websocket, actions_ref=None):
                 await websocket.send("OK actions saved" if ok else "ERR actions save failed")
             elif message == "actions_get":
                 await websocket.send("ACTIONS:" + json.dumps(state.actions_ref[0]))
+            elif message == "version_get":
+                await websocket.send(f"VERSION_INFO:{{\"service\":\"{state.service_version}\",\"firmware\":\"{state.firmware_version}\"}}")
             elif message == "flash":
                 if state.flashing_active:
                     await websocket.send("FLASH:error:Flash already in progress.")

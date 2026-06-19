@@ -33,9 +33,17 @@ def switch_mode(target_mode):
         try:
             ACTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
             tmp_path = ACTIONS_PATH.with_suffix(".tmp")
-            with open(tmp_path, "w") as f:
-                json.dump(actions, f, indent=2)
-            os.replace(tmp_path, ACTIONS_PATH)
+            max_retries = 5
+            for attempt in range(max_retries):
+                try:
+                    with open(tmp_path, "w") as f:
+                        json.dump(actions, f, indent=2)
+                    os.replace(tmp_path, ACTIONS_PATH)
+                    break
+                except PermissionError as pe:
+                    if attempt == max_retries - 1:
+                        raise pe
+                    time.sleep(0.05)
             print(f"[mode] switched to '{target_mode}' and saved configuration")
         except Exception as e:
             print(f"[mode] error saving configuration: {e}")
@@ -63,8 +71,16 @@ def load_actions():
         try:
             if ACTIONS_PATH.exists():
                 file_existed = True
-                with open(ACTIONS_PATH) as f:
-                    actions = json.load(f)
+                max_retries = 5
+                for attempt in range(max_retries):
+                    try:
+                        with open(ACTIONS_PATH) as f:
+                            actions = json.load(f)
+                        break
+                    except PermissionError as pe:
+                        if attempt == max_retries - 1:
+                            raise pe
+                        time.sleep(0.05)
         except Exception as e:
             print(f"[actions] {e}")
             parsing_error = True
@@ -147,7 +163,7 @@ def load_actions():
                             "top:2": {"action": "mode", "value": "Default"}
                         },
                         "led": {
-                            "effect": "dot_swirl",
+                            "effect": "volume",
                             "color": "00FF00",
                             "brightness": 128
                         }
@@ -197,17 +213,32 @@ def load_actions():
                 "taps": {
                     "top:2": {"action": "mode", "value": "Default"}
                 },
-                "led": {"effect": "dot_swirl", "color": "00FF00", "brightness": 128}
+                "led": {"effect": "volume", "color": "00FF00", "brightness": 128}
             }
             migrated = True
+        elif "Media" in actions["modes"]:
+            media_mode = actions["modes"]["Media"]
+            if media_mode.get("led", {}).get("effect") == "dot_swirl":
+                if "led" not in media_mode:
+                    media_mode["led"] = {}
+                media_mode["led"]["effect"] = "volume"
+                migrated = True
 
         if migrated and not parsing_error:
             try:
                 ACTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
                 tmp_path = ACTIONS_PATH.with_suffix(".tmp")
-                with open(tmp_path, "w") as f:
-                    json.dump(actions, f, indent=2)
-                os.replace(tmp_path, ACTIONS_PATH)
+                max_retries = 5
+                for attempt in range(max_retries):
+                    try:
+                        with open(tmp_path, "w") as f:
+                            json.dump(actions, f, indent=2)
+                        os.replace(tmp_path, ACTIONS_PATH)
+                        break
+                    except PermissionError as pe:
+                        if attempt == max_retries - 1:
+                            raise pe
+                        time.sleep(0.05)
                 print(f"[actions] migrated and saved to {ACTIONS_PATH}")
             except Exception as e:
                 print(f"[actions] failed to save migrated actions: {e}")
@@ -233,9 +264,17 @@ def save_actions(json_str):
         with state.config_lock:
             ACTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
             tmp_path = ACTIONS_PATH.with_suffix(".tmp")
-            with open(tmp_path, "w") as f:
-                json.dump(data, f, indent=2)
-            os.replace(tmp_path, ACTIONS_PATH)
+            max_retries = 5
+            for attempt in range(max_retries):
+                try:
+                    with open(tmp_path, "w") as f:
+                        json.dump(data, f, indent=2)
+                    os.replace(tmp_path, ACTIONS_PATH)
+                    break
+                except PermissionError as pe:
+                    if attempt == max_retries - 1:
+                        raise pe
+                    time.sleep(0.05)
             state.actions_ref[0] = data
         print(f"[config] saved {ACTIONS_PATH}")
         return True
