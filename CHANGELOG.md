@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.6] - 2026-06-19
+
+### Changed
+- **Codebase Restructuring**: Refactored `linapse-service` monolithic daemon script into a modular Python package structure under `service/linapse/` (Option 1).
+- **Test Compatibility Wrapper**: Added dynamic proxy lookup mechanism to `linapse-service` using module-level `__getattr__` and `__setattr__` hooks to fully support and execute the existing test suite without changes.
+- **Service Installer Update**: Updated `install.sh` and mock installation tests to correctly copy and verify the new modular `linapse` package directory.
+- **Documentation Update**: Changed all references from web app / web configurator to refer to the Electron configurator app and updated setup/execution instructions.
+
 ## [2.8.5] - 2026-06-19
 
 ### Added

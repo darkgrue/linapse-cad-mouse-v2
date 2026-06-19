@@ -1,17 +1,17 @@
 # Using the Linapse Configurator
 
-The Linapse configurator is a browser-based control panel for the CAD Mouse MK2. It talks to `linapse-service` over a WebSocket (`ws://localhost:13000`) and lets you remap buttons and taps, design RGB lighting, and tune the motion filter — all applied to the device live over the serial link.
+The Linapse configurator is an Electron-based control panel for the CAD Mouse MK2. It talks to `linapse-service` over a WebSocket (`ws://localhost:13000`) and lets you remap buttons and taps, design RGB lighting, and tune the motion filter — all applied to the device live over the serial link.
 
 This guide walks through each tab. For install/setup, see the [main README](../README.md) and [service/README.md](../service/README.md). For configuring specific 3D/CAD applications, see the **[Application Integrations Guide](INTEGRATIONS.md)**.
 
 ## Before you start
 
 1. Plug in the device and confirm `linapse-service` is running (`systemctl --user status linapse-service`).
-2. Serve the configurator and open it:
+2. Open the configurator directory, install dependencies, and start the app:
    ```bash
    cd configurator
-   python3 -m http.server 7890
-   # open http://localhost:7890
+   npm install
+   npm start
    ```
 3. The header shows the connection state. **CONNECTED** (red dot, top-left) means the configurator is talking to the device. If it reads **Disconnected**, start `linapse-service` and reload.
 

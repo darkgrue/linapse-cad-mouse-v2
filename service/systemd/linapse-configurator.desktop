@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Linapse Configurator
-Comment=CAD Mouse MK2 Web Configurator (Electron App)
+Comment=CAD Mouse MK2 Electron Configurator
 Exec=sh -c "cd __REPO_DIR__/configurator && npm start"
 Icon=__REPO_DIR__/configurator/linapse-square-logo.png
 Terminal=false

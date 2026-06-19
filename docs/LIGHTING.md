@@ -92,10 +92,10 @@ Displays the host operating system's current playback volume (0% to 100%) on LED
 
 There are two ways to configure the lighting effects:
 
-### Method 1: Web Configurator (Recommended)
-1. Serve and open the web configurator (`http://localhost:7890`).
+### Method 1: Electron Configurator (Recommended)
+1. Open the `configurator/` directory and run the app (`npm install && npm start`).
 2. Go to the **Lighting** tab.
-3. Select an **Effect**, choose a **Color** using the color-picker, adjust the **Brightness** slider, and click **Apply to Device**.
+3. Select an **Effect**, choose a **Color** using the color-picker, adjust the **Brightness** slider, and apply it.
 4. The configurations are saved to the current active profile (mode).
 
 ### Method 2: Command Line (Serial)

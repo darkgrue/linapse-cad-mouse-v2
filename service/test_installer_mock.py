@@ -203,6 +203,9 @@ exec {sys.executable} "$@"
         self.assertTrue(local_bin_linapse.exists(), "linapse-service should be copied to user bin")
         self.assertTrue(os.access(local_bin_linapse, os.X_OK), "linapse-service should be executable")
 
+        local_bin_linapse_pkg = self.mock_home / ".local" / "bin" / "linapse"
+        self.assertTrue(local_bin_linapse_pkg.exists() and local_bin_linapse_pkg.is_dir(), "linapse package directory should be copied to user bin")
+
         local_bin_proxy = self.mock_home / ".local" / "bin" / "linapse-ws-proxy"
         self.assertTrue(local_bin_proxy.exists(), "linapse-ws-proxy should be copied to user bin")
         self.assertTrue(os.access(local_bin_proxy, os.X_OK), "linapse-ws-proxy should be executable")

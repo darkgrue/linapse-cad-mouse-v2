@@ -8,11 +8,11 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-passing-success)](#) [![Debian](https://img.shields.io/badge/Debian-passing-success)](#) [![Fedora](https://img.shields.io/badge/Fedora-passing-success)](#) [![Windows](https://img.shields.io/badge/Windows-passing-success)](#) [![macOS](https://img.shields.io/badge/macOS-passing-success)](#)
 <!-- DISTRO_BADGES_END -->
 
-[![Windows Setup](https://img.shields.io/badge/Windows-v2.8.5-0078D6?logo=windows&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe)
-[![macOS Package](https://img.shields.io/badge/macOS-v2.8.5-000000?logo=apple&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/linapse-service.pkg)
+[![Windows Setup](https://img.shields.io/badge/Windows-v2.8.6-0078D6?logo=windows&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe)
+[![macOS Package](https://img.shields.io/badge/macOS-v2.8.6-000000?logo=apple&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/linapse-service.pkg)
 
 
-**Linapse** is a cross-platform software stack (supporting Linux, Windows, and macOS) for the [CAD Mouse MK2](https://github.com/sb-ocr/cad-mouse-mk2) — a DIY 6-degrees-of-freedom "space mouse" that senses motion with three magnetic field sensors instead of optics. Since the hardware has no official drivers from 3Dconnexion, this project supplies everything needed to make it a first-class input device on Linux, Windows, and macOS: device firmware, a host-side service, and a web configurator.
+**Linapse** is a cross-platform software stack (supporting Linux, Windows, and macOS) for the [CAD Mouse MK2](https://github.com/sb-ocr/cad-mouse-mk2) — a DIY 6-degrees-of-freedom "space mouse" that senses motion with three magnetic field sensors instead of optics. Since the hardware has no official drivers from 3Dconnexion, this project supplies everything needed to make it a first-class input device on Linux, Windows, and macOS: device firmware, a host-side service, and an Electron configurator.
 
 > This is an independent software fork focused on cross-platform support and the Linapse configurator. It is **not** intended to be merged back upstream. Hardware design, enclosure, PCB, and BOM live in the [original project](https://github.com/sb-ocr/cad-mouse-mk2).
 
@@ -40,11 +40,11 @@
 - **Physical buttons, taps, and gestures.** The host service maps physical button clicks (including single click, double click, and multi-click actions), button chords, and cap-tap gestures to keystrokes, mouse events, custom shell commands, macros, or profile/mode switches.
 - **Configurable modes & input suppression.** In specialized modes like **Browser** and **Media**, standard 6DoF translation/rotation reports are suppressed. Browser Mode maps the puck's pitch rotation to web page scrolling and physical buttons to browser tab navigation. Media Mode maps puck pitch to system volume control, puck twist to scrubbing, and buttons to track navigation.
 - **Addressable RGB lighting.** SK6812 LEDs with multiple effects (solid, breathing, motion-reactive, swirls) configured live per-mode.
-- **Linapse web configurator.** A browser UI to manage modes, remap buttons/taps, design lighting, and tune the motion filter — with a live 3D Benchy viewport you can push around with the puck to feel sensitivity changes in real time.
+- **Linapse Electron configurator.** An Electron UI to manage modes, remap buttons/taps, design lighting, and tune the motion filter — with a live 3D Benchy viewport you can push around with the puck to feel sensitivity changes in real time.
 
 ## The configurator
 
-A single static web app with three tabs, talking to `linapse-service` over WebSocket and writing changes to the device live. Full walkthrough: **[docs/USAGE.md](docs/USAGE.md)**.
+An Electron app with three tabs, talking to `linapse-service` over WebSocket and writing changes to the device live. Full walkthrough: **[docs/USAGE.md](docs/USAGE.md)**.
 
 ### Active Mode Selector
 ![Active Mode Selector](docs/images/configurator-modes.png)
@@ -99,7 +99,7 @@ How the data flows:
 - **Motion** is decoded on the device, sent as raw 6DoF telemetry over **USB serial** to `linapse-service`. The service scales and inverts the coordinates according to user configuration. On Linux, it writes them to the user-space UNIX socket at `/run/user/<uid>/spnav.sock` where native applications read them directly. On Windows/macOS, it emulates mouse inputs directly using `pynput`.
 - **Buttons** are sent as HID report events over the USB HID interface (read via `hidraw` on Linux) or over the USB serial interface (on Windows/macOS), and mapped to keystrokes/macros using `ydotool` (Linux) or `pynput` (Windows/macOS).
 - **Taps and Gestures** are detected in firmware, sent over **USB serial** to `linapse-service`, and dispatched via `ydotool` (Linux) or `pynput` (Windows/macOS).
-- **Configuration** (sensitivity, deadzones, lighting patterns) flows bidirectionally over **USB serial** between `linapse-service` and the device, controlled via the WebSocket connection (`ws://localhost:13000`) from the Linapse web configurator.
+- **Configuration** (sensitivity, deadzones, lighting patterns) flows bidirectionally over **USB serial** between `linapse-service` and the device, controlled via the WebSocket connection (`ws://localhost:13000`) from the Linapse Electron configurator.
 
 > **Note on Windows/macOS Architecture**: On Windows and macOS, UNIX sockets and udev/hidraw are not used. Button presses and motion telemetry are read entirely over the USB serial interface. Keyboard and mouse events are injected directly into the host OS using the cross-platform `pynput` library.
 
@@ -114,7 +114,7 @@ How the data flows:
 | [`docs/LIGHTING.md`](docs/LIGHTING.md) | LED lighting guide — detailed breakdown of the 7 available lighting effects (solid, breathing, reactive, dot swirl, gradient, rainbow, volume) with animated GIF demonstrations. |
 | [`docs/WINDOWS.md`](docs/WINDOWS.md) | Windows quick start & install guide — detailed setup instructions, including the pre-compiled installer, running from source, userscripts, and configuration differences. |
 | [`docs/MACOS.md`](docs/MACOS.md) | macOS quick start & install guide — detailed setup instructions, including the pre-compiled package, system permissions, running from source, and configuration differences. |
-| [`configurator/`](configurator/) | Linapse web configurator — a static web app (Three.js 3D viewport) that talks to `linapse-service` over WebSocket. |
+| [`configurator/`](configurator/) | Linapse Electron configurator — an Electron app (Three.js 3D viewport) that talks to `linapse-service` over WebSocket. |
 | [`platformio.ini`](platformio.ini) | Firmware build configuration. |
 
 ## Quick start
@@ -169,12 +169,12 @@ Then install the Tampermonkey userscript ([`service/linapse-browser-connector.us
 
 ### 3. Open the configurator
 
-The configurator is a static web app. Serve the `configurator/` directory with any static HTTP server and open it in a browser while `linapse-service` is running:
+The configurator is an Electron app. Open the `configurator/` directory, install the dependencies, and start the app while `linapse-service` is running:
 
 ```bash
 cd configurator
-python3 -m http.server 7890
-# then open http://localhost:7890
+npm install
+npm start
 ```
 
 It connects to `linapse-service` at `ws://localhost:13000`. From there you can remap buttons and taps, design lighting, and tune the motion filter against the live 3D test viewport. See **[docs/USAGE.md](docs/USAGE.md)** for a tab-by-tab walkthrough.

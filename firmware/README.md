@@ -22,7 +22,7 @@ This project is built using **PlatformIO**. Target environment and build configu
 To flash the device:
 1. Hold both physical buttons down while inserting the USB cable.
 2. The device will reboot to bootloader (BOOTSEL) mode, mounting as a USB storage drive.
-3. Drag and drop the compiled `.uf2` file, or flash directly using the Web Configurator build utility.
+3. Drag and drop the compiled `.uf2` file, or flash directly using the Electron Configurator build utility.
 4. Alternatively, sending a reset command or opening a serial connection at 1200 baud resets the RP2040 to bootloader mode.
 
 ---

@@ -1,0 +1,50 @@
+import asyncio
+import json
+import websockets
+import websockets.exceptions
+from . import state
+from .config import save_actions
+from .flashing import flash_device
+
+async def ws_handler(websocket, actions_ref=None):
+    request = getattr(websocket, "request", None)
+    if request is not None:
+        origin = request.headers.get("Origin")
+    else:
+        origin = getattr(websocket, "request_headers", {}).get("Origin")
+
+    if origin:
+        origin_lower = origin.lower()
+        is_local = (
+            "localhost" in origin_lower or
+            "127.0.0.1" in origin_lower or
+            origin_lower.startswith("file://") or
+            origin_lower.startswith("chrome-extension://") or
+            origin_lower == "null"
+        )
+        if not is_local:
+            print(f"[ws] rejected connection from unauthorized origin: {origin}")
+            await websocket.close(1008, "Unauthorized Origin")
+            return
+
+    state.ws_clients.add(websocket)
+    print(f"[ws] client connected ({len(state.ws_clients)} total)")
+    try:
+        async for message in websocket:
+            if message.startswith("actions "):
+                ok = await asyncio.to_thread(save_actions, message[8:])
+                await websocket.send("OK actions saved" if ok else "ERR actions save failed")
+            elif message == "actions_get":
+                await websocket.send("ACTIONS:" + json.dumps(state.actions_ref[0]))
+            elif message == "flash":
+                if state.flashing_active:
+                    await websocket.send("FLASH:error:Flash already in progress.")
+                else:
+                    asyncio.create_task(flash_device())
+            else:
+                await state.serial_queue.put(message)
+    except websockets.exceptions.ConnectionClosed:
+        pass
+    finally:
+        state.ws_clients.discard(websocket)
+        print(f"[ws] client disconnected ({len(state.ws_clients)} total)")

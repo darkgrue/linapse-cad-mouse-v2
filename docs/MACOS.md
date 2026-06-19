@@ -70,16 +70,16 @@ Browser-based CAD tools sandbox network connections. To bridge the CAD Mouse MK2
 
 ---
 
-## Tuning with the Web Configurator
+## Tuning with the Electron Configurator
 
-The configurator is a static web app that interfaces with `linapse-service` over WebSocket (`ws://localhost:13000`):
+The configurator is an Electron app that interfaces with `linapse-service` over WebSocket (`ws://localhost:13000`):
 
-1. Serve the `configurator/` directory using any static web server. For example:
+1. Open the `configurator/` directory, install dependencies, and start the app:
    ```bash
    cd configurator
-   python3 -m http.server 7890
+   npm install
+   npm start
    ```
-2. Open `http://localhost:7890` in Safari, Chrome, or Firefox.
 3. Ensure the indicator in the top-left reads **CONNECTED** (red dot).
 4. Use the **Sensitivity** tab to adjust dead zones, Kalman filters, and axes inversion in real time. Use the **Lighting** tab to configure the SK6812 LED ring.
 
