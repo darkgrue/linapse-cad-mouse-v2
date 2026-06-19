@@ -113,8 +113,6 @@ def serial_thread(actions_ref):
                             state.broadcast_from_thread(f"TAP:{human}:{count_str}")
                 elif line.startswith(">MOTION:"):
                     current_mode = actions_ref[0].get("current_mode", "Default") if actions_ref[0] else "Default"
-                    if current_mode not in ("Browser", "Media"):
-                        state.broadcast_from_thread(line[1:])  # strip '>' → MOTION:...
                     try:
                         parts = line[8:].split(",")
                         if len(parts) == 6:
@@ -148,6 +146,9 @@ def serial_thread(actions_ref):
                             if inv.get("rx", False): rx = -rx
                             if inv.get("ry", False): ry = -ry
                             if inv.get("rz", False): rz = -rz
+
+                            if current_mode not in ("Browser", "Media"):
+                                state.broadcast_from_thread(f"MOTION:{x:.1f},{y:.1f},{z:.1f},{rx:.1f},{ry:.1f},{rz:.1f}")
 
                             if current_mode == "Browser":
                                 if abs(rx) > 15.0:
