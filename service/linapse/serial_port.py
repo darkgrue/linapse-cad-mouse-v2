@@ -226,8 +226,7 @@ def serial_thread(actions_ref):
                             # Send processed coordinates back to the device to emit via USB HID
                             try:
                                 custom_usb = actions_ref[0].get("custom_usb", {}) if actions_ref[0] else {}
-                                import sys
-                                if sys.platform != "darwin" or custom_usb.get("enabled", False):
+                                if custom_usb.get("enabled", False):
                                     if current_mode not in ("Browser", "Media"):
                                         ser.write(f"hid_report {x:.1f},{y:.1f},{z:.1f},{rx:.1f},{ry:.1f},{rz:.1f}\n".encode())
                                     else:

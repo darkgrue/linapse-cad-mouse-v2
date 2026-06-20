@@ -101,20 +101,22 @@ def test_serial_button_clicks_on_mac_windows(monkeypatch):
                         
         mock_release.assert_called_once_with(0, actions)
 
-def test_suppress_hid_report_on_mac(monkeypatch):
-    monkeypatch.setattr("sys.platform", "darwin")
-    
-    # 1. Custom USB disabled: should NOT write hid_report
-    actions_ref = [{
-        "custom_usb": {"enabled": False}
-    }]
-    
-    # Check if logic suppresses hid_report
-    custom_usb = actions_ref[0].get("custom_usb", {})
-    should_send = (sys.platform != "darwin" or custom_usb.get("enabled", False))
-    assert not should_send
-    
-    # 2. Custom USB enabled: SHOULD write hid_report
-    actions_ref[0]["custom_usb"]["enabled"] = True
-    should_send = (sys.platform != "darwin" or actions_ref[0].get("custom_usb", {}).get("enabled", False))
-    assert should_send
+def test_suppress_hid_report(monkeypatch):
+    # Test on multiple simulated platforms
+    for platform in ("linux", "darwin", "win32"):
+        monkeypatch.setattr("sys.platform", platform)
+        
+        # 1. Custom USB disabled: should NOT write hid_report
+        actions_ref = [{
+            "custom_usb": {"enabled": False}
+        }]
+        
+        custom_usb = actions_ref[0].get("custom_usb", {})
+        should_send = custom_usb.get("enabled", False)
+        assert not should_send
+        
+        # 2. Custom USB enabled: SHOULD write hid_report
+        actions_ref[0]["custom_usb"]["enabled"] = True
+        should_send = actions_ref[0].get("custom_usb", {}).get("enabled", False)
+        assert should_send
+

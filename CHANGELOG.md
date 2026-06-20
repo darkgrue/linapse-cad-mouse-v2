@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.2] - 2026-06-19
+
+### Fixed
+- **HID Report Suppression**: Suppressed sending processed coordinates back to the device to emit via USB HID reports on all platforms (including Linux) unless `custom_usb` emulation is explicitly enabled in actions configuration. This prevents unwanted mouse cursor movement on Linux systems when SpaceMouse emulation is not active.
+
 ## [2.11.1] - 2026-06-19
 
 ### Fixed
