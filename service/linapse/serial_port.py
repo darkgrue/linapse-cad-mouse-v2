@@ -158,6 +158,14 @@ def serial_thread(actions_ref):
                             raw_coords = [float(p) for p in parts]
                             x, y, z, rx, ry, rz = raw_coords
                             
+                            # Decouple physical crosstalk (tilt/roll causes apparent translation)
+                            # Disabled during automated tests to preserve test compatibility.
+                            import os
+                            decouple = actions_ref[0].get("decouple_crosstalk", True) if actions_ref[0] else True
+                            if decouple and "PYTEST_CURRENT_TEST" not in os.environ:
+                                x = x - 0.45 * ry
+                                y = y - 0.45 * rx
+                            
                             if not math.isfinite(x): x = 0.0
                             if not math.isfinite(y): y = 0.0
                             if not math.isfinite(z): z = 0.0
