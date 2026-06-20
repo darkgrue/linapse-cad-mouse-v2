@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.9] - 2026-06-20
+
+### Fixed
+- **3D Benchy Rotations**: Mapped Ry (Tilt Left/Right) to local Z rotation (roll) and Rz (Twist Left/Right) to local Y rotation (yaw) in the configurator 3D preview, allowing the 3D Benchy model to roll correctly.
+
 ## [2.14.8] - 2026-06-20
 
 ### Fixed

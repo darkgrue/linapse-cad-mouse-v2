@@ -322,8 +322,8 @@ def test_benchy_viewport_motion_and_toasts(tmp_path):
                 ("X", "100.0,0,0,0,0,0", "-100.0,0,0,0,0,0", lambda c: c['x'], True, "#invX"),
                 ("Z", "0,0,100.0,0,0,0", "0,0,-100.0,0,0,0", lambda c: c['y'], False, "#invZ"),
                 ("RX", "0,0,0,100.0,0,0", "0,0,0,-100.0,0,0", lambda c: c['rx'], True, "#invRx"),
-                ("RY", "0,0,0,0,100.0,0", "0,0,0,0,-100.0,0", lambda c: c['ry'], True, "#invRy"),
-                ("RZ", "0,0,0,0,0,100.0", "0,0,0,0,0,-100.0", lambda c: c['rz'], False, "#invRz"),
+                ("RY", "0,0,0,0,100.0,0", "0,0,0,0,-100.0,0", lambda c: c['rz'], True, "#invRy"),
+                ("RZ", "0,0,0,0,0,100.0", "0,0,0,0,0,-100.0", lambda c: c['ry'], True, "#invRz"),
             ]
 
             for name, pos_input, neg_input, get_val, normal_pos_increases, selector in axes_to_test:

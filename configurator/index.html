@@ -3127,14 +3127,14 @@ function applyMotion(v, ignoreInversion = false) {
   const dx = (inv.x ? -v[0] : v[0]) * T;
   const dy = (inv.z ? -v[2] : v[2]) * T;
   const drx = (inv.rx ? -v[3] : v[3]) * R;
-  const dry = (inv.ry ? -v[4] : v[4]) * R;
-  const drz = (inv.rz ? -v[5] : v[5]) * R;
+  const dry = (inv.rz ? -v[5] : v[5]) * R;
+  const drz = (inv.ry ? -v[4] : v[4]) * R;
 
   benchy.position.x = Math.max(-xBound, Math.min(xBound, benchy.position.x + dx));
   benchy.position.y = Math.max(-yBound, Math.min(yBound, benchy.position.y - dy));
   benchy.rotation.x += drx;
   benchy.rotation.y += dry;
-  benchy.rotation.z -= drz;
+  benchy.rotation.z += drz;
   requestRender();
 }
 
@@ -4177,7 +4177,7 @@ function handleFlashMessage(msg) {
   }
 }
 
-let serviceVersion = '2.14.8';
+let serviceVersion = '2.14.9';
 let firmwareVersion = 'unknown';
 
 function handleVersionInfo(info) {
