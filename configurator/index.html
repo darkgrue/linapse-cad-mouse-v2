@@ -3664,7 +3664,7 @@ function handleWizardMotion(vals) {
   
   document.getElementById('wizardLiveValue').textContent = v.toFixed(1);
   
-  if (v > 30.0) {
+  if (v > 15.0) {
     step.hasDeflected = true;
   }
   
@@ -4162,7 +4162,7 @@ function handleFlashMessage(msg) {
   }
 }
 
-let serviceVersion = '2.14.4';
+let serviceVersion = '2.14.5';
 let firmwareVersion = 'unknown';
 
 function handleVersionInfo(info) {
