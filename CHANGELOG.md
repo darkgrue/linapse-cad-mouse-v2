@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.0] - 2026-06-20
+
+### Added
+- **Interactive Calibration Wizard**: Interactive 6-step sensitivity calibration wizard overlay in the configurator to guide users through deflecting the puck to comfort limits, automatically setting directional sensitivities.
+
+### Changed
+- **Max Sensitivity limit**: Raised maximum directional sensitivity limit from 5.0 to 20.0 for all 12 range/number inputs in the configurator.
+
 ## [2.13.0] - 2026-06-20
 
 ### Added

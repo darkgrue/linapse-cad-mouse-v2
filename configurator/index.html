@@ -848,6 +848,119 @@ input[type=range]::-webkit-slider-thumb {
   align-self: flex-start;
   text-transform: uppercase;
 }
+
+/* Calibration Wizard Styles */
+.wizard-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 10, 10, 0.95);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--text);
+  padding: 20px;
+}
+.wizard-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  border-radius: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.wizard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+.wizard-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--green);
+}
+.wizard-step-indicator {
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.wizard-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text2);
+}
+.wizard-instruction {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.wizard-live-value {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: monospace;
+  text-align: center;
+  margin: 12px 0;
+  color: var(--green);
+  text-shadow: 0 0 8px rgba(0, 255, 102, 0.2);
+}
+.wizard-progress-bar-container {
+  height: 6px;
+  background: var(--border2);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.wizard-progress-bar {
+  height: 100%;
+  background: var(--green);
+  width: 0%;
+  transition: width 0.1s linear;
+}
+.wizard-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.wizard-btn {
+  padding: 8px 16px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, background-color 0.15s;
+}
+.wizard-btn-primary {
+  background: var(--green);
+  color: #000;
+}
+.wizard-btn-secondary {
+  background: transparent;
+  color: var(--text3);
+  border: 1px solid var(--border);
+}
+.wizard-btn:hover {
+  opacity: 0.85;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/three@0.140.2/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.140.2/examples/js/lines/LineSegmentsGeometry.js"></script>
@@ -1041,6 +1154,28 @@ input[type=range]::-webkit-slider-thumb {
     <div id="benchyViewport" style="flex:1;position:relative;background:#0d0d0d;overflow:hidden;min-width:0">
       <canvas id="benchyCanvas" style="display:block;width:100%;height:100%"></canvas>
       <div style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:2px;color:rgba(255,255,255,0.2);pointer-events:none;white-space:nowrap">MOVE PUCK TO TEST</div>
+      
+      <!-- Calibration Wizard Overlay -->
+      <div id="calibrationWizardOverlay" class="wizard-overlay">
+        <div class="wizard-card">
+          <div class="wizard-header">
+            <div class="wizard-title" id="wizardTitle">Calibration Wizard</div>
+            <div class="wizard-step-indicator" id="wizardStepIndicator">Step 0/7</div>
+          </div>
+          <div class="wizard-body">
+            <div class="wizard-instruction" id="wizardInstruction">Welcome to Sensitivity Calibration.</div>
+            <div id="wizardDetails">This guide will help you set comfortable sensitivities for your puck.</div>
+            <div class="wizard-live-value" id="wizardLiveValue" style="display: none;">0.0</div>
+            <div class="wizard-progress-bar-container" id="wizardProgressBarContainer" style="display: none; margin-top: 12px;">
+              <div class="wizard-progress-bar" id="wizardProgressBar"></div>
+            </div>
+          </div>
+          <div class="wizard-footer">
+            <button class="wizard-btn wizard-btn-secondary" id="wizardCancelBtn" onclick="cancelCalibrationWizard()">Cancel</button>
+            <button class="wizard-btn wizard-btn-primary" id="wizardNextBtn" onclick="nextCalibrationWizardStep()">Start</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Sliders panel -->
@@ -1153,6 +1288,9 @@ input[type=range]::-webkit-slider-thumb {
 
         <!-- AXES TAB SECTION -->
         <div id="sens-section-axes" class="sens-section" style="display:none">
+          <div style="margin-bottom: 12px;">
+            <button class="btn-apply" style="margin: 0; width: 100%; height: 36px;" onclick="startCalibrationWizard()">Run Calibration Wizard</button>
+          </div>
           <div class="field-group">
             <div class="field-label" style="color:var(--green);letter-spacing:2px;font-size:10px;font-family:'Barlow Condensed',sans-serif">DIRECTIONAL SENSITIVITY (TRANSLATION)</div>
           
@@ -1162,22 +1300,22 @@ input[type=range]::-webkit-slider-thumb {
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">X+ (Right)</span>
-                  <input type="number" id="sensXPosVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('x_pos','sensXPos','sensXPosVal')"
-                         onchange="onDirSensTextBlur('x_pos','sensXPos','sensXPosVal')">
+                  <input type="number" id="sensXPosVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('x_pos','sensXPos','sensXPosVal')"
+                          onchange="onDirSensTextBlur('x_pos','sensXPos','sensXPosVal')">
                 </div>
-                <input type="range" id="sensXPos" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('x_pos','sensXPos','sensXPosVal')">
+                <input type="range" id="sensXPos" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('x_pos','sensXPos','sensXPosVal')">
               </div>
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">X- (Left)</span>
-                  <input type="number" id="sensXNegVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('x_neg','sensXNeg','sensXNegVal')"
-                         onchange="onDirSensTextBlur('x_neg','sensXNeg','sensXNegVal')">
+                  <input type="number" id="sensXNegVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('x_neg','sensXNeg','sensXNegVal')"
+                          onchange="onDirSensTextBlur('x_neg','sensXNeg','sensXNegVal')">
                 </div>
-                <input type="range" id="sensXNeg" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('x_neg','sensXNeg','sensXNegVal')">
+                <input type="range" id="sensXNeg" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('x_neg','sensXNeg','sensXNegVal')">
               </div>
             </div>
           </div>
@@ -1188,22 +1326,22 @@ input[type=range]::-webkit-slider-thumb {
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">Y+ (Forward)</span>
-                  <input type="number" id="sensYPosVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('y_pos','sensYPos','sensYPosVal')"
-                         onchange="onDirSensTextBlur('y_pos','sensYPos','sensYPosVal')">
+                  <input type="number" id="sensYPosVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('y_pos','sensYPos','sensYPosVal')"
+                          onchange="onDirSensTextBlur('y_pos','sensYPos','sensYPosVal')">
                 </div>
-                <input type="range" id="sensYPos" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('y_pos','sensYPos','sensYPosVal')">
+                <input type="range" id="sensYPos" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('y_pos','sensYPos','sensYPosVal')">
               </div>
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">Y- (Backward)</span>
-                  <input type="number" id="sensYNegVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('y_neg','sensYNeg','sensYNegVal')"
-                         onchange="onDirSensTextBlur('y_neg','sensYNeg','sensYNegVal')">
+                  <input type="number" id="sensYNegVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('y_neg','sensYNeg','sensYNegVal')"
+                          onchange="onDirSensTextBlur('y_neg','sensYNeg','sensYNegVal')">
                 </div>
-                <input type="range" id="sensYNeg" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('y_neg','sensYNeg','sensYNegVal')">
+                <input type="range" id="sensYNeg" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('y_neg','sensYNeg','sensYNegVal')">
               </div>
             </div>
           </div>
@@ -1214,22 +1352,22 @@ input[type=range]::-webkit-slider-thumb {
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">Z+ (Up)</span>
-                  <input type="number" id="sensZPosVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('z_pos','sensZPos','sensZPosVal')"
-                         onchange="onDirSensTextBlur('z_pos','sensZPos','sensZPosVal')">
+                  <input type="number" id="sensZPosVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('z_pos','sensZPos','sensZPosVal')"
+                          onchange="onDirSensTextBlur('z_pos','sensZPos','sensZPosVal')">
                 </div>
-                <input type="range" id="sensZPos" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('z_pos','sensZPos','sensZPosVal')">
+                <input type="range" id="sensZPos" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('z_pos','sensZPos','sensZPosVal')">
               </div>
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">Z- (Down)</span>
-                  <input type="number" id="sensZNegVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('z_neg','sensZNeg','sensZNegVal')"
-                         onchange="onDirSensTextBlur('z_neg','sensZNeg','sensZNegVal')">
+                  <input type="number" id="sensZNegVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('z_neg','sensZNeg','sensZNegVal')"
+                          onchange="onDirSensTextBlur('z_neg','sensZNeg','sensZNegVal')">
                 </div>
-                <input type="range" id="sensZNeg" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('z_neg','sensZNeg','sensZNegVal')">
+                <input type="range" id="sensZNeg" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('z_neg','sensZNeg','sensZNegVal')">
               </div>
             </div>
           </div>
@@ -1245,22 +1383,22 @@ input[type=range]::-webkit-slider-thumb {
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">Rx+ (Forward)</span>
-                  <input type="number" id="sensRxPosVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('rx_pos','sensRxPos','sensRxPosVal')"
-                         onchange="onDirSensTextBlur('rx_pos','sensRxPos','sensRxPosVal')">
+                  <input type="number" id="sensRxPosVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('rx_pos','sensRxPos','sensRxPosVal')"
+                          onchange="onDirSensTextBlur('rx_pos','sensRxPos','sensRxPosVal')">
                 </div>
-                <input type="range" id="sensRxPos" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('rx_pos','sensRxPos','sensRxPosVal')">
+                <input type="range" id="sensRxPos" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('rx_pos','sensRxPos','sensRxPosVal')">
               </div>
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">Rx- (Back)</span>
-                  <input type="number" id="sensRxNegVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('rx_neg','sensRxNeg','sensRxNegVal')"
-                         onchange="onDirSensTextBlur('rx_neg','sensRxNeg','sensRxNegVal')">
+                  <input type="number" id="sensRxNegVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('rx_neg','sensRxNeg','sensRxNegVal')"
+                          onchange="onDirSensTextBlur('rx_neg','sensRxNeg','sensRxNegVal')">
                 </div>
-                <input type="range" id="sensRxNeg" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('rx_neg','sensRxNeg','sensRxNegVal')">
+                <input type="range" id="sensRxNeg" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('rx_neg','sensRxNeg','sensRxNegVal')">
               </div>
             </div>
           </div>
@@ -1271,22 +1409,22 @@ input[type=range]::-webkit-slider-thumb {
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">Ry+ (Left)</span>
-                  <input type="number" id="sensRyPosVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('ry_pos','sensRyPos','sensRyPosVal')"
-                         onchange="onDirSensTextBlur('ry_pos','sensRyPos','sensRyPosVal')">
+                  <input type="number" id="sensRyPosVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('ry_pos','sensRyPos','sensRyPosVal')"
+                          onchange="onDirSensTextBlur('ry_pos','sensRyPos','sensRyPosVal')">
                 </div>
-                <input type="range" id="sensRyPos" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('ry_pos','sensRyPos','sensRyPosVal')">
+                <input type="range" id="sensRyPos" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('ry_pos','sensRyPos','sensRyPosVal')">
               </div>
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">Ry- (Right)</span>
-                  <input type="number" id="sensRyNegVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('ry_neg','sensRyNeg','sensRyNegVal')"
-                         onchange="onDirSensTextBlur('ry_neg','sensRyNeg','sensRyNegVal')">
+                  <input type="number" id="sensRyNegVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('ry_neg','sensRyNeg','sensRyNegVal')"
+                          onchange="onDirSensTextBlur('ry_neg','sensRyNeg','sensRyNegVal')">
                 </div>
-                <input type="range" id="sensRyNeg" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('ry_neg','sensRyNeg','sensRyNegVal')">
+                <input type="range" id="sensRyNeg" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('ry_neg','sensRyNeg','sensRyNegVal')">
               </div>
             </div>
           </div>
@@ -1297,22 +1435,22 @@ input[type=range]::-webkit-slider-thumb {
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">Rz+ (Left)</span>
-                  <input type="number" id="sensRzPosVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('rz_pos','sensRzPos','sensRzPosVal')"
-                         onchange="onDirSensTextBlur('rz_pos','sensRzPos','sensRzPosVal')">
+                  <input type="number" id="sensRzPosVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('rz_pos','sensRzPos','sensRzPosVal')"
+                          onchange="onDirSensTextBlur('rz_pos','sensRzPos','sensRzPosVal')">
                 </div>
-                <input type="range" id="sensRzPos" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('rz_pos','sensRzPos','sensRzPosVal')">
+                <input type="range" id="sensRzPos" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('rz_pos','sensRzPos','sensRzPosVal')">
               </div>
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                   <span class="field-label" style="font-size: 10px; color: var(--text3); margin: 0;">Rz- (Right)</span>
-                  <input type="number" id="sensRzNegVal" min="0.1" max="5.0" step="0.1" value="1.0" 
-                         style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
-                         oninput="onDirSensTextChange('rz_neg','sensRzNeg','sensRzNegVal')"
-                         onchange="onDirSensTextBlur('rz_neg','sensRzNeg','sensRzNegVal')">
+                  <input type="number" id="sensRzNegVal" min="0.1" max="20.0" step="0.1" value="1.0" 
+                          style="width: 48px; background: var(--border2); border: 1px solid var(--border); color: var(--text); font-size: 10px; text-align: right; padding: 1px 3px; border-radius: 3px; font-family: inherit;"
+                          oninput="onDirSensTextChange('rz_neg','sensRzNeg','sensRzNegVal')"
+                          onchange="onDirSensTextBlur('rz_neg','sensRzNeg','sensRzNegVal')">
                 </div>
-                <input type="range" id="sensRzNeg" min="0.1" max="5.0" step="0.1" value="1.0" oninput="onDirSensChange('rz_neg','sensRzNeg','sensRzNegVal')">
+                <input type="range" id="sensRzNeg" min="0.1" max="20.0" step="0.1" value="1.0" oninput="onDirSensChange('rz_neg','sensRzNeg','sensRzNegVal')">
               </div>
             </div>
           </div>
@@ -2556,7 +2694,12 @@ function connectWS() {
     }
     if (msg.startsWith('MOTION:')) {
       const vals = msg.slice(7).split(',').map(Number);
-      if (vals.length === 6) applyMotion(vals, true);
+      if (vals.length === 6) {
+        applyMotion(vals, true);
+        if (typeof wizardRecording !== 'undefined' && wizardRecording) {
+          handleWizardMotion(vals);
+        }
+      }
       return;
     }
     if (msg.startsWith('TAP:')) {
@@ -3216,6 +3359,270 @@ function sensReset() {
   sendCmd('actions ' + JSON.stringify(actions));
 }
 
+// Calibration Wizard Logic
+let wizardStep = 0;
+let wizardOriginalSensitivities = null;
+let wizardPeaks = {};
+let wizardRecording = false;
+let wizardTimer = null;
+let wizardRemainingTimeMs = 0;
+
+const wizardStepData = [
+  {
+    title: "Start Calibration",
+    instruction: "Welcome to Puck Sensitivity Calibration.",
+    details: "This wizard helps set optimal sensitivities. You will deflect the puck in each direction to measure your natural comfort range.<br><br>Ready? Press Start."
+  },
+  {
+    title: "Step 1: X Axis",
+    instruction: "Deflect puck fully LEFT and RIGHT.",
+    details: "Move the puck repeatedly to your comfortable limits left and right.",
+    axisIndex: 0,
+    posKey: 'x_neg', // Left
+    negKey: 'x_pos', // Right
+    posLabel: 'Left',
+    negLabel: 'Right'
+  },
+  {
+    title: "Step 2: Y Axis",
+    instruction: "Deflect puck fully FORWARD and BACKWARD.",
+    details: "Push and pull the puck repeatedly forward and backward.",
+    axisIndex: 1,
+    posKey: 'y_pos', // Forward
+    negKey: 'y_neg', // Backward
+    posLabel: 'Forward',
+    negLabel: 'Backward'
+  },
+  {
+    title: "Step 3: Z Axis",
+    instruction: "Pull puck UP and push DOWN.",
+    details: "Pull up and push down on the puck repeatedly.",
+    axisIndex: 2,
+    posKey: 'z_neg', // Down
+    negKey: 'z_pos', // Up
+    posLabel: 'Down',
+    negLabel: 'Up'
+  },
+  {
+    title: "Step 4: Rx Axis (Tilt)",
+    instruction: "Tilt puck FORWARD and BACKWARD.",
+    details: "Tilt the puck forward and backward repeatedly.",
+    axisIndex: 3,
+    posKey: 'rx_pos', // Forward
+    negKey: 'rx_neg', // Backward
+    posLabel: 'Tilt Forward',
+    negLabel: 'Tilt Backward'
+  },
+  {
+    title: "Step 5: Ry Axis (Tilt)",
+    instruction: "Tilt puck LEFT and RIGHT.",
+    details: "Tilt the puck left and right repeatedly.",
+    axisIndex: 4,
+    posKey: 'ry_pos', // Left
+    negKey: 'ry_neg', // Right
+    posLabel: 'Tilt Left',
+    negLabel: 'Tilt Right'
+  },
+  {
+    title: "Step 6: Rz Axis (Twist)",
+    instruction: "Twist puck LEFT and RIGHT.",
+    details: "Twist the puck clockwise and counter-clockwise repeatedly.",
+    axisIndex: 5,
+    posKey: 'rz_pos', // Left
+    negKey: 'rz_neg', // Right
+    posLabel: 'Twist Left',
+    negLabel: 'Twist Right'
+  },
+  {
+    title: "Calibration Complete",
+    instruction: "All axes calibrated!",
+    details: "Review the calculated sensitivities below. Press Save to apply them.",
+    isCompleteStep: true
+  }
+];
+
+function startCalibrationWizard() {
+  wizardOriginalSensitivities = JSON.parse(JSON.stringify(actions.sensitivity || {}));
+  
+  const keys = ['x_pos', 'x_neg', 'y_pos', 'y_neg', 'z_pos', 'z_neg', 'rx_pos', 'rx_neg', 'ry_pos', 'ry_neg', 'rz_pos', 'rz_neg'];
+  wizardPeaks = {};
+  keys.forEach(k => { wizardPeaks[k] = 0.0; });
+
+  if (!actions.sensitivity) actions.sensitivity = {};
+  keys.forEach(k => { actions.sensitivity[k] = 1.0; });
+  sendCmd('actions ' + JSON.stringify(actions));
+
+  document.getElementById('calibrationWizardOverlay').style.display = 'flex';
+  setWizardStep(0);
+}
+
+function cancelCalibrationWizard() {
+  if (wizardTimer) {
+    clearInterval(wizardTimer);
+    wizardTimer = null;
+  }
+  if (wizardOriginalSensitivities) {
+    actions.sensitivity = wizardOriginalSensitivities;
+    sendCmd('actions ' + JSON.stringify(actions));
+    syncActionsUI();
+  }
+  document.getElementById('calibrationWizardOverlay').style.display = 'none';
+  wizardRecording = false;
+  wizardStep = 0;
+}
+
+function setWizardStep(stepIdx) {
+  wizardStep = stepIdx;
+  const step = wizardStepData[stepIdx];
+  
+  document.getElementById('wizardStepIndicator').textContent = `Step ${stepIdx}/7`;
+  document.getElementById('wizardTitle').textContent = step.title;
+  document.getElementById('wizardInstruction').textContent = step.instruction;
+  
+  const liveValEl = document.getElementById('wizardLiveValue');
+  const progressContainer = document.getElementById('wizardProgressBarContainer');
+  const detailsEl = document.getElementById('wizardDetails');
+  const nextBtn = document.getElementById('wizardNextBtn');
+  const cancelBtn = document.getElementById('wizardCancelBtn');
+  
+  if (stepIdx === 0) {
+    liveValEl.style.display = 'none';
+    progressContainer.style.display = 'none';
+    detailsEl.innerHTML = step.details;
+    nextBtn.textContent = 'Start';
+    nextBtn.style.display = 'inline-block';
+    cancelBtn.textContent = 'Cancel';
+  } else if (stepIdx >= 1 && stepIdx <= 6) {
+    step.posPeak = 0.0;
+    step.negPeak = 0.0;
+    
+    liveValEl.style.display = 'block';
+    liveValEl.textContent = '0.0';
+    
+    progressContainer.style.display = 'block';
+    document.getElementById('wizardProgressBar').style.width = '100%';
+    
+    detailsEl.innerHTML = step.details + `<br><br>Waiting to start...`;
+    nextBtn.textContent = 'Next';
+    nextBtn.style.display = 'none';
+    cancelBtn.textContent = 'Cancel';
+    
+    startRecordingForStep(stepIdx);
+  } else if (stepIdx === 7) {
+    liveValEl.style.display = 'none';
+    progressContainer.style.display = 'none';
+    
+    let summaryHtml = step.details + '<br><br><table style="width:100%; border-collapse: collapse; font-size:12px;">';
+    summaryHtml += '<tr style="border-bottom:1px solid var(--border);color:var(--green)"><th style="text-align:left;padding:4px">Axis</th><th style="text-align:right;padding:4px">Positive</th><th style="text-align:right;padding:4px">Negative</th></tr>';
+    
+    for (let i = 1; i <= 6; i++) {
+      const s = wizardStepData[i];
+      const sensPos = (350.0 / Math.max(s.posPeak, 17.5)).toFixed(1);
+      const sensNeg = (350.0 / Math.max(s.negPeak, 17.5)).toFixed(1);
+      
+      summaryHtml += `<tr style="border-bottom:1px solid var(--border)">`;
+      summaryHtml += `<td style="padding:4px">${s.title.split(': ')[1]}</td>`;
+      summaryHtml += `<td style="text-align:right;padding:4px">${s.posLabel}: ${sensPos}</td>`;
+      summaryHtml += `<td style="text-align:right;padding:4px">${s.negLabel}: ${sensNeg}</td>`;
+      summaryHtml += `</tr>`;
+    }
+    summaryHtml += '</table>';
+    
+    detailsEl.innerHTML = summaryHtml;
+    
+    nextBtn.textContent = 'Save';
+    nextBtn.style.display = 'inline-block';
+    cancelBtn.textContent = 'Cancel';
+  }
+}
+
+function startRecordingForStep(stepIdx) {
+  wizardRecording = true;
+  wizardRemainingTimeMs = 3000;
+  
+  if (wizardTimer) clearInterval(wizardTimer);
+  
+  const step = wizardStepData[stepIdx];
+  
+  wizardTimer = setInterval(() => {
+    wizardRemainingTimeMs -= 100;
+    if (wizardRemainingTimeMs <= 0) {
+      clearInterval(wizardTimer);
+      wizardTimer = null;
+      wizardRecording = false;
+      
+      document.getElementById('wizardProgressBar').style.width = '0%';
+      document.getElementById('wizardLiveValue').style.display = 'none';
+      document.getElementById('wizardNextBtn').style.display = 'inline-block';
+      document.getElementById('wizardDetails').innerHTML = `
+        <strong>Recording finished!</strong><br>
+        Recorded peaks:<br>
+        - ${step.posLabel}: ${step.posPeak.toFixed(1)}<br>
+        - ${step.negLabel}: ${step.negPeak.toFixed(1)}<br><br>
+        Press Next to continue.
+      `;
+    } else {
+      const pct = (wizardRemainingTimeMs / 3000) * 100;
+      document.getElementById('wizardProgressBar').style.width = pct + '%';
+      
+      const secondsLeft = (wizardRemainingTimeMs / 1000).toFixed(1);
+      document.getElementById('wizardDetails').innerHTML = `
+        ${step.details}<br><br>
+        <strong>Recording: ${secondsLeft}s remaining</strong><br>
+        Current peaks:<br>
+        - ${step.posLabel}: ${step.posPeak.toFixed(1)}<br>
+        - ${step.negLabel}: ${step.negPeak.toFixed(1)}
+      `;
+    }
+  }, 100);
+}
+
+function nextCalibrationWizardStep() {
+  if (wizardStep < 7) {
+    if (wizardTimer) {
+      clearInterval(wizardTimer);
+      wizardTimer = null;
+    }
+    setWizardStep(wizardStep + 1);
+  } else {
+    saveCalibrationResults();
+  }
+}
+
+function saveCalibrationResults() {
+  if (!actions.sensitivity) actions.sensitivity = {};
+  
+  for (let i = 1; i <= 6; i++) {
+    const s = wizardStepData[i];
+    const sensPos = parseFloat((350.0 / Math.max(s.posPeak, 17.5)).toFixed(1));
+    const sensNeg = parseFloat((350.0 / Math.max(s.negPeak, 17.5)).toFixed(1));
+    
+    actions.sensitivity[s.posKey] = sensPos;
+    actions.sensitivity[s.negKey] = sensNeg;
+  }
+  
+  sendCmd('actions ' + JSON.stringify(actions));
+  syncActionsUI();
+  
+  document.getElementById('calibrationWizardOverlay').style.display = 'none';
+  wizardStep = 0;
+}
+
+function handleWizardMotion(vals) {
+  const step = wizardStepData[wizardStep];
+  if (!step || step.axisIndex === undefined) return;
+  
+  const val = vals[step.axisIndex];
+  
+  if (val > 0) {
+    step.posPeak = Math.max(step.posPeak || 0, val);
+  } else if (val < 0) {
+    step.negPeak = Math.max(step.negPeak || 0, Math.abs(val));
+  }
+  
+  document.getElementById('wizardLiveValue').textContent = val.toFixed(1);
+}
+
 function onBrightChange() {
   const v = document.getElementById('ledBrightness').value;
   document.getElementById('brightVal').textContent = Math.round(v / 255 * 100);
@@ -3675,7 +4082,7 @@ function handleFlashMessage(msg) {
   }
 }
 
-let serviceVersion = '2.13.0';
+let serviceVersion = '2.14.0';
 let firmwareVersion = 'unknown';
 
 function handleVersionInfo(info) {

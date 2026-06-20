@@ -113,31 +113,30 @@ The **LED Preview** ring is a live mock of what the device will show before you 
 
 ## Sensitivity — motion tuning
 
-![Sensitivity tab](images/configurator-sensitivity.gif)
+Tune the 6DoF motion filter against a live 3D **Benchy** test model. **Changes apply live** — drag the puck and feel the difference immediately. The viewport prompt reads **MOVE PUCK TO TEST**.
 
-Tune the 6DoF motion filter against a live 3D **Benchy** test model. **Changes apply live** — there's no Apply button; drag the puck and feel the difference immediately. The viewport prompt reads **MOVE PUCK TO TEST**.
+The Sensitivity panel is organized into three sub-tabs:
 
-**Dead Zones** — ignore tiny unintended motion:
+### General
+Configure filter settings and dead zones:
+- **Dead Zones**: Ignore tiny unintended motion. Translation range `0 – 50` (default `16`), Rotation range `0 – 50` (default `20`).
+- **Kalman Filter**: Trade responsiveness against smoothness. Responsiveness (Q) range `0.05 – 2` (default `0.5`, higher = snappier), Smoothness (R) range `0.5 – 15` (default `4`, higher = smoother).
+- **Curve (Exponent)**: Input-to-output response shaping from `1 – 5` (default `3`). Low values give linear 1:1 response, high values make small movements gentle and large movements aggressive.
 
-| Control | Range | Default |
-|---------|-------|---------|
-| **Translation** | 0 – 50 | 16 |
-| **Rotation** | 0 – 50 | 20 |
+### Axes (Directional Sensitivity & Calibration Wizard)
+Manage sensitivity individually for all 12 direction vectors:
+- **Max Sensitivity**: Sliders and inputs accept values up to `20.0` (previously `5.0`) to accommodate pucks with tighter spring deflection or user preferences.
+- **Interactive Calibration Wizard**: Click **Run Calibration Wizard** at the top of the Axes tab to start a guided, step-by-step setup:
+  1. The wizard overlays on top of the Benchy canvas.
+  2. For each of the 6 physical axes (X, Y, Z, Rx, Ry, Rz), you will deflect the puck to your comfortable limits for 3 seconds.
+  3. Telemetry is measured unscaled (using a temporary `1.0` sensitivity baseline).
+  4. The wizard computes optimal sensitivity coefficients `S = 350.0 / peak` clamped to `[0.1, 20.0]` (rounded to 1 decimal place).
+  5. The new directional sensitivities are applied to your sliders and saved automatically.
 
-**Kalman Filter** — trade responsiveness against smoothness:
-
-| Control | Range | Default | Notes |
-|---------|-------|---------|-------|
-| **Responsiveness (Q)** | 0.05 – 2 | 0.5 | Higher = snappier, more jitter. |
-| **Smoothness (R)** | 0.5 – 15 | 4 | Higher = smoother, more lag. |
-
-**Curve** — input-to-output response shaping:
-
-| Control | Range | Default |
-|---------|-------|---------|
-| **Exponent** | 1 – 5 | 3 |
-
-The exponent slider is labelled **Linear → Cubic → Steep**: low values give linear 1:1 response, high values make small movements gentle and large movements aggressive.
+### Tap
+Configure touch and tap parameters:
+- **Velocity Threshold**: Speed at which a tap is registered.
+- **Invert Tap Z Axis**: Toggle to invert tap direction if downward taps do not register (useful if puck magnets are reversed).
 
 **Reset to Defaults** restores every slider on this tab.
 
