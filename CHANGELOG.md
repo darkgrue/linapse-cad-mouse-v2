@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.3] - 2026-06-19
+
+### Fixed
+- **Serial Heartbeat Keepalive**: Added a 1.0-second serial keepalive heartbeat during active puck telemetry transmission in `linapse-service` when custom USB is disabled. This prevents the device from timing out and reverting to local HID mode, which was causing the mouse cursor to move on Linux when the puck was actively manipulated.
+
 ## [2.11.2] - 2026-06-19
 
 ### Fixed

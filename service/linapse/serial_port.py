@@ -75,6 +75,7 @@ def serial_thread(actions_ref):
             
             # Send initial active mode's LED settings to the device so they are in sync on startup.
             actions = actions_ref[0]
+            last_write_time = time.time()
             if actions and "modes" in actions:
                 current_mode = actions.get("current_mode", "Default")
                 if current_mode in actions["modes"]:
@@ -88,6 +89,7 @@ def serial_thread(actions_ref):
                         ser.write(f"led brightness {brightness}\n".encode())
                         ser.write(b"service_hid 1\n")
                         ser.write(b"version\n")
+                        last_write_time = time.time()
                     except Exception as e:
                         print(f"[serial] failed to write initial LED/HID commands: {e}")
                         
@@ -100,6 +102,7 @@ def serial_thread(actions_ref):
                         ser.write(b"service_hid 1\n")
                         if state.firmware_version == "unknown":
                             ser.write(b"version\n")
+                        last_write_time = time.time()
                     except Exception as e:
                         print(f"[serial] failed to write heartbeat: {e}")
                     continue
@@ -231,6 +234,12 @@ def serial_thread(actions_ref):
                                         ser.write(f"hid_report {x:.1f},{y:.1f},{z:.1f},{rx:.1f},{ry:.1f},{rz:.1f}\n".encode())
                                     else:
                                         ser.write(b"hid_report 0,0,0,0,0,0\n")
+                                    last_write_time = time.time()
+                                else:
+                                    # Refresh service_hid mode every 1s when receiving telemetry to prevent timeout
+                                    if time.time() - last_write_time >= 1.0:
+                                        ser.write(b"service_hid 1\n")
+                                        last_write_time = time.time()
                             except Exception as e:
                                 print(f"[serial] failed to write hid_report back: {e}")
 
