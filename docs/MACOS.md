@@ -1,5 +1,8 @@
 # Linapse CAD Mouse — macOS Installation & Quick Start
 
+> [!WARNING]
+> macOS support is currently in active development and may not work as expected.
+
 This guide helps you set up and configure the **CAD Mouse MK2** using **Linapse** on Apple macOS.
 
 ---
