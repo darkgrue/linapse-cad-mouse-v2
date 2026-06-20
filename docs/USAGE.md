@@ -160,6 +160,8 @@ The footer's **Save Profile** / **Load Profile** export and import the complete 
 
 ## Firmware — flashing
 
+![Firmware Tab](images/configurator-firmware.png)
+
 The **Firmware** tab lets you compile and flash the CAD Mouse MK2 firmware directly from the configurator.
 
 - **Firmware Compilation**: Uses PlatformIO to compile the source code in the repository.

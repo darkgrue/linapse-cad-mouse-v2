@@ -7,8 +7,8 @@
 <!-- DISTRO_BADGES_START -->
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-passing-success)](#) [![Debian](https://img.shields.io/badge/Debian-passing-success)](#) [![Fedora](https://img.shields.io/badge/Fedora-passing-success)](#) [![Windows](https://img.shields.io/badge/Windows-passing-success)](#) [![macOS](https://img.shields.io/badge/macOS-passing-success)](#)
 <!-- DISTRO_BADGES_END -->
-[![Windows Setup](https://img.shields.io/badge/Windows-v2.14.17-0078D6?logo=windows&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe)
-[![macOS Package](https://img.shields.io/badge/macOS-v2.14.17-000000?logo=apple&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/linapse-service.pkg)
+[![Windows Setup](https://img.shields.io/badge/Windows-v2.14.18-0078D6?logo=windows&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe)
+[![macOS Package](https://img.shields.io/badge/macOS-v2.14.18-000000?logo=apple&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/linapse-service.pkg)
 
 
 **Linapse** is a cross-platform software stack (supporting Linux, Windows, and macOS) for the [CAD Mouse MK2](https://github.com/sb-ocr/cad-mouse-mk2) — a DIY 6-degrees-of-freedom "space mouse" that senses motion with three magnetic field sensors instead of optics. Since the hardware has no official drivers from 3Dconnexion, this project supplies everything needed to make it a first-class input device on Linux, Windows, and macOS: device firmware, a host-side service, and an Electron configurator.
@@ -47,7 +47,7 @@
 
 ## The configurator
 
-An Electron app with three tabs, talking to `linapse-service` over WebSocket and writing changes to the device live. Full walkthrough: **[docs/USAGE.md](docs/USAGE.md)**.
+An Electron app with four tabs, talking to `linapse-service` over WebSocket and writing changes to the device live. Full walkthrough: **[docs/USAGE.md](docs/USAGE.md)**.
 
 ### Active Mode Selector
 ![Active Mode Selector](docs/images/configurator-modes.png)
@@ -68,6 +68,11 @@ Drive the SK6812 ring — solid, breathing, motion-reactive, swirl, gradient, ra
 ![Sensitivity Tab](docs/images/configurator-sensitivity.gif)
 
 Tune dead zones, the Kalman filter, and the response curve against a live 3D Benchy you push with the puck. Also includes an **Interactive Sensitivity Calibration Wizard** to guide you through deflecting the puck to comfort limits, automatically calculating and setting optimal directional sensitivities (up to 20.0).
+
+### Firmware Tab
+![Firmware Tab](docs/images/configurator-firmware.png)
+
+Compile and flash the firmware directly from the configurator. Automatically detects devices, puts them into BOOTSEL mode, mounts the Raspberry Pi RP2 drive, and writes the `firmware.uf2` binary with real-time log output.
 
 ## Architecture
 

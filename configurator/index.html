@@ -3136,11 +3136,17 @@ function applyMotion(v, ignoreInversion = false) {
   const T = 0.001, R = 0.00028;
   
   const inv = (!ignoreInversion && actions && actions.inversion) ? actions.inversion : {};
-  const dx = (inv.x ? -v[0] : v[0]) * T;
-  const dy = (inv.z ? -v[2] : v[2]) * T;
+  let dx = (inv.x ? -v[0] : v[0]) * T;
+  let dy = (inv.z ? -v[2] : v[2]) * T;
   const drx = (inv.rx ? -v[3] : v[3]) * R;
   const dry = (inv.rz ? -v[5] : v[5]) * R;
   const drz = (inv.ry ? -v[4] : v[4]) * R;
+
+  // Suppress translation while rotating to keep the model centered
+  if (Math.abs(drx) > 1e-5 || Math.abs(dry) > 1e-5 || Math.abs(drz) > 1e-5) {
+    dx = 0;
+    dy = 0;
+  }
 
   benchy.position.x = Math.max(-xBound, Math.min(xBound, benchy.position.x + dx));
   benchy.position.y = Math.max(-yBound, Math.min(yBound, benchy.position.y - dy));
@@ -4188,7 +4194,7 @@ function handleFlashMessage(msg) {
   }
 }
 
-let serviceVersion = '2.14.17';
+let serviceVersion = '2.14.18';
 let firmwareVersion = 'unknown';
 
 function handleVersionInfo(info) {
