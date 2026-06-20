@@ -3433,7 +3433,7 @@ const wizardStepData = [
     instruction: "Tilt puck fully FORWARD.",
     details: "Tilt the puck forward to your comfortable limit, then let go.",
     axisIndex: 3,
-    isPositive: true,
+    isPositive: false,
     key: 'rx_pos',
     dirLabel: 'Tilt Forward'
   },
@@ -3442,7 +3442,7 @@ const wizardStepData = [
     instruction: "Tilt puck fully BACKWARD.",
     details: "Tilt the puck backward to your comfortable limit, then let go.",
     axisIndex: 3,
-    isPositive: false,
+    isPositive: true,
     key: 'rx_neg',
     dirLabel: 'Tilt Backward'
   },
@@ -3451,7 +3451,7 @@ const wizardStepData = [
     instruction: "Tilt puck fully LEFT.",
     details: "Tilt the puck left to your comfortable limit, then let go.",
     axisIndex: 4,
-    isPositive: true,
+    isPositive: false,
     key: 'ry_pos',
     dirLabel: 'Tilt Left'
   },
@@ -3460,7 +3460,7 @@ const wizardStepData = [
     instruction: "Tilt puck fully RIGHT.",
     details: "Tilt the puck right to your comfortable limit, then let go.",
     axisIndex: 4,
-    isPositive: false,
+    isPositive: true,
     key: 'ry_neg',
     dirLabel: 'Tilt Right'
   },
@@ -3664,7 +3664,7 @@ function handleWizardMotion(vals) {
   
   document.getElementById('wizardLiveValue').textContent = v.toFixed(1);
   
-  if (v > 15.0) {
+  if (v > 10.0) {
     step.hasDeflected = true;
   }
   
@@ -4162,7 +4162,7 @@ function handleFlashMessage(msg) {
   }
 }
 
-let serviceVersion = '2.14.5';
+let serviceVersion = '2.14.6';
 let firmwareVersion = 'unknown';
 
 function handleVersionInfo(info) {

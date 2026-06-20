@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.6] - 2026-06-20
+
+### Fixed
+- **Tilt Direction Mappings**: Corrected sign mappings in the host service and configurator calibration wizard steps for Rx (Tilt Forward/Backward) and Ry (Tilt Left/Right) to match physical tilt directions.
+
+### Changed
+- **Calibration Wizard**: Lowered the start deflection noise floor threshold from 15.0 to 10.0 for easier calibration.
+
 ## [2.14.5] - 2026-06-20
 
 ### Changed
