@@ -7,8 +7,8 @@
 <!-- DISTRO_BADGES_START -->
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-passing-success)](#) [![Debian](https://img.shields.io/badge/Debian-passing-success)](#) [![Fedora](https://img.shields.io/badge/Fedora-passing-success)](#) [![Windows](https://img.shields.io/badge/Windows-passing-success)](#) [![macOS](https://img.shields.io/badge/macOS-passing-success)](#)
 <!-- DISTRO_BADGES_END -->
-[![Windows Setup](https://img.shields.io/badge/Windows-v2.15.0-0078D6?logo=windows&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe)
-[![macOS Package](https://img.shields.io/badge/macOS-v2.15.0-000000?logo=apple&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/linapse-service.pkg)
+[![Windows Setup](https://img.shields.io/badge/Windows-v2.15.1-0078D6?logo=windows&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe)
+[![macOS Package](https://img.shields.io/badge/macOS-v2.15.1-000000?logo=apple&logoColor=white)](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/linapse-service.pkg)
 
 
 **Linapse** is a cross-platform software stack (supporting Linux, Windows, and macOS) for the [CAD Mouse MK2](https://github.com/sb-ocr/cad-mouse-mk2) — a DIY 6-degrees-of-freedom "space mouse" that senses motion with three magnetic field sensors instead of optics. Since the hardware has no official drivers from 3Dconnexion, this project supplies everything needed to make it a first-class input device on Linux, Windows, and macOS: device firmware, a host-side service, and an Electron configurator.
@@ -31,7 +31,7 @@
 - Wayland-Native Input Injection (Linux) & OS-Native Input Injection (Windows/macOS)
 - Dynamic Tap Counts
 - Live 3D Viewport Tuning
-- **Interactive Sensitivity Calibration Wizard**
+- **Interactive Motion Calibration Wizard**
 - Addressable RGB LED Control
 - Native App Integrations (Linux, Windows, macOS)
 - Web CAD Connector
@@ -54,8 +54,8 @@ An Electron app with four tabs, talking to `linapse-service` over WebSocket and 
 
 Create, rename, delete, and switch between lighting and button layout profiles/modes directly from the active mode selector header.
 
-### Customize Tab
-![Customize Tab](docs/images/configurator-customize-tap.png)
+### Controls Tab
+![Controls Tab](docs/images/configurator-customize-tap.png)
 
 Remap the 2 buttons (supporting multi-click tabs), the chord, and 5 cap-tap zones to keys, clicks, scrolls, commands, modes, or macros.
 
@@ -64,10 +64,10 @@ Remap the 2 buttons (supporting multi-click tabs), the chord, and 5 cap-tap zone
 
 Drive the SK6812 ring — solid, breathing, motion-reactive, swirl, gradient, rainbow — with live color and brightness.
 
-### Sensitivity Tab
-![Sensitivity Tab](docs/images/configurator-sensitivity.gif)
+### Motion Tab
+![Motion Tab](docs/images/configurator-sensitivity.gif)
 
-Tune dead zones, the Kalman filter, and the response curve against a live 3D Benchy you push with the puck. Also includes an **Interactive Sensitivity Calibration Wizard** to guide you through deflecting the puck to comfort limits, automatically calculating and setting optimal directional sensitivities (up to 20.0).
+Tune dead zones, the Kalman filter, and the response curve against a live 3D Benchy you push with the puck. Also includes an **Interactive Motion Calibration Wizard** to guide you through deflecting the puck to comfort limits, automatically calculating and setting optimal directional sensitivities (up to 20.0).
 
 ### Firmware Tab
 ![Firmware Tab](docs/images/configurator-firmware.png)
@@ -190,8 +190,8 @@ It connects to `linapse-service` at `ws://localhost:13000`. From there you can r
 ## Tuning
 
 - **Feel / gains / deadzones:** firmware defaults live in `firmware/include/Config.h` — see [firmware/README.md](firmware/README.md).
-- **Live motion filter** (Kalman responsiveness/smoothness, dead zones, sensitivity curve): the configurator's Sensitivity tab, applied to the device over serial in real time.
-- **Sensitivity/Inversion:** custom axis scaling, deadzones, and direction inversions are applied in `linapse-service` using user configuration (see configurator Sensitivity tab).
+- **Live motion filter** (Kalman responsiveness/smoothness, dead zones, sensitivity curve): the configurator's Motion tab, applied to the device over serial in real time.
+- **Sensitivity/Inversion:** custom axis scaling, deadzones, and direction inversions are applied in `linapse-service` using user configuration (see configurator Motion tab).
 
 ## Testing
 

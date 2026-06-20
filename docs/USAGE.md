@@ -15,7 +15,7 @@ This guide walks through each tab. For install/setup, see the [main README](../R
    ```
 3. The header shows the connection state. **CONNECTED** (red dot, top-left) means the configurator is talking to the device. If it reads **Disconnected**, start `linapse-service` and reload.
 
-The three tabs — **Customize**, **Lighting**, **Sensitivity** — run across the top. **Load Profile** / **Save Profile** in the footer persist the full device config (all three tabs) to a JSON file.
+The four tabs — **Controls**, **Lighting**, **Motion**, **Firmware** — run across the top. **Load Profile** / **Save Profile** in the footer persist the full device config (all tabs) to a JSON file.
 
 ---
 
@@ -35,9 +35,9 @@ Linapse includes two specialized modes that suppress standard 6DoF motion report
 
 ---
 
-## Customize — buttons & taps
+## Controls — buttons & taps
 
-![Customize tab](images/configurator-customize-tap.png)
+![Controls tab](images/configurator-customize-tap.png)
 
 The 3D device is annotated with every input zone. Click a callout to open its action panel on the right.
 
@@ -111,13 +111,13 @@ The **LED Preview** ring is a live mock of what the device will show before you 
 
 ---
 
-## Sensitivity — motion tuning
+## Motion — tuning
 
-![Sensitivity tab](images/configurator-sensitivity.png)
+![Motion tab](images/configurator-sensitivity.png)
 
 Tune the 6DoF motion filter against a live 3D **Benchy** test model. **Changes apply live** — drag the puck and feel the difference immediately. The viewport prompt reads **MOVE PUCK TO TEST**.
 
-The Sensitivity panel is organized into three sub-tabs:
+The Motion panel is organized into three sub-tabs:
 
 ### General
 Configure filter settings and dead zones:
@@ -128,7 +128,7 @@ Configure filter settings and dead zones:
 
 ### Axes (Directional Sensitivity & Calibration Wizard)
 
-![Sensitivity Axes & Calibration Wizard](images/configurator-sensitivity-axes.png)
+![Motion Axes & Calibration Wizard](images/configurator-sensitivity-axes.png)
 
 Manage sensitivity individually for all 12 direction vectors:
 - **Max Sensitivity**: Sliders and inputs accept values up to `20.0` (previously `5.0`) to accommodate pucks with tighter spring deflection or user preferences.

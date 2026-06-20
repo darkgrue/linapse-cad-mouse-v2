@@ -116,6 +116,13 @@ class ThreadedHTTPServer:
         self.server.shutdown()
         self.server.server_close()
 
+def mock_path_factory(temp_socket_path):
+    def mock_path(*args, **kwargs):
+        if args and "spnav.sock" in str(args[0]):
+            return Path(temp_socket_path)
+        return Path(*args, **kwargs)
+    return mock_path
+
 # Mock serial class
 class MockSerialPort:
     def __init__(self, *args, **kwargs):
@@ -206,6 +213,7 @@ def test_benchy_viewport_motion_and_toasts(tmp_path):
 
     # Setup patchers
     patchers = [
+        patch("linapse_service.Path", mock_path_factory(tmp_path / "spnav.sock")),
         patch("linapse_service.serial.Serial", return_value=mock_serial),
         patch("linapse_service.find_serial", return_value="MOCK_COM"),
         patch("linapse_service.glob.glob", custom_glob),
@@ -276,7 +284,7 @@ def test_benchy_viewport_motion_and_toasts(tmp_path):
             page.goto(f"http://localhost:{http_port}/index.html")
 
             # Click the "Sensitivity" tab to load the Benchy viewport
-            page.click("text=Sensitivity")
+            page.click("text=Motion")
 
             # Poll until benchyScene is initialized
             start_time = time.time()
@@ -510,6 +518,7 @@ def test_benchy_sensitivity_and_dead_zones(tmp_path):
 
     # Setup patchers
     patchers = [
+        patch("linapse_service.Path", mock_path_factory(tmp_path / "spnav.sock")),
         patch("linapse_service.serial.Serial", return_value=mock_serial),
         patch("linapse_service.find_serial", return_value="MOCK_COM"),
         patch("linapse_service.glob.glob", custom_glob),
@@ -579,7 +588,7 @@ def test_benchy_sensitivity_and_dead_zones(tmp_path):
             page.goto(f"http://localhost:{http_port}/index.html")
 
             # Click the "Sensitivity" tab to load the Benchy viewport
-            page.click("text=Sensitivity")
+            page.click("text=Motion")
 
             # Poll until benchyScene is initialized
             start_time = time.time()
@@ -641,7 +650,7 @@ def test_benchy_sensitivity_and_dead_zones(tmp_path):
             
             # Refresh page
             page.reload()
-            page.click("text=Sensitivity")
+            page.click("text=Motion")
             page.click("text=Axes")
             time.sleep(0.5) # Wait for page and scene to load
             
@@ -672,7 +681,7 @@ def test_benchy_sensitivity_and_dead_zones(tmp_path):
             
             # Refresh page
             page.reload()
-            page.click("text=Sensitivity")
+            page.click("text=Motion")
             page.click("text=Axes")
             time.sleep(0.5)
             

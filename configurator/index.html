@@ -984,9 +984,9 @@ input[type=range]::-webkit-slider-thumb {
 
 <!-- Tab bar -->
 <div class="tabbar">
-  <div class="tab active" onclick="switchTab('customize', this)">Customize</div>
+  <div class="tab active" onclick="switchTab('customize', this)">Controls</div>
   <div class="tab" onclick="switchTab('lighting', this)">Lighting</div>
-  <div class="tab" onclick="switchTab('sensitivity', this)">Sensitivity</div>
+  <div class="tab" onclick="switchTab('sensitivity', this)">Motion</div>
   <div class="tab" onclick="switchTab('firmware', this)" style="position: relative; display: flex; align-items: center; gap: 6px;">
     Firmware
     <span id="fwBadge" style="display: none; width: 8px; height: 8px; background-color: #ff4a4a; border-radius: 50%;"></span>
@@ -1182,10 +1182,10 @@ input[type=range]::-webkit-slider-thumb {
     <!-- Sliders panel -->
     <div class="side-panel" style="transform:none">
       <div class="panel-header">
-        <div class="panel-title" style="font-size:15px;letter-spacing:2px">Sensitivity</div>
+        <div class="panel-title" style="font-size:15px;letter-spacing:2px">Motion</div>
         <div class="panel-sub">Changes apply live</div>
       </div>
-      <!-- Sensitivity Sub-tabs -->
+      <!-- Motion Sub-tabs -->
       <div class="sens-tabs">
         <div class="sens-tab active" onclick="switchSensTab('general', this)">General</div>
         <div class="sens-tab" onclick="switchSensTab('axes', this)">Axes</div>
@@ -4218,7 +4218,7 @@ function handleFlashMessage(msg) {
   }
 }
 
-let serviceVersion = '2.15.0';
+let serviceVersion = '2.15.1';
 let firmwareVersion = 'unknown';
 
 function handleVersionInfo(info) {

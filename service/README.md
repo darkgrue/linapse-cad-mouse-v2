@@ -63,9 +63,9 @@ For detailed setup, configuration, and verification guides for all 14 supported/
 
 > **Note:** If you were just added to the `input` group, log out and back in (or reboot) before the buttons will work.
 
-## Button mapping & Sensitivity tuning
+## Button mapping & Motion tuning
 
-To change button maps, tap gestures, lighting, or motion sensitivity, use the **Linapse Configurator** (see `docs/USAGE.md` for details). 
+To change button maps, tap gestures, lighting, or motion tuning, use the **Linapse Configurator** (see `docs/USAGE.md` for details). 
 
 Manual configuration is loaded from:
 `~/.config/cad-mouse/actions.json`

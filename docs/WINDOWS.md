@@ -69,12 +69,12 @@ The configurator is an Electron app that interfaces with `linapse-service` over 
    npm start
    ```
 3. Ensure the indicator in the top-left reads **CONNECTED** (red dot).
-4. Use the **Sensitivity** tab to adjust dead zones, Kalman filters, and axes inversion in real time. Use the **Lighting** tab to configure the SK6812 LED ring.
+4. Use the **Motion** tab to adjust dead zones, Kalman filters, and axes inversion in real time. Use the **Lighting** tab to configure the SK6812 LED ring.
 
 ---
 
 ## Customization Differences on Windows
 
 > [!IMPORTANT]
-> - **Physical Buttons**: Because the device functions as a native HID mouse, the **Customize** tab's remappings for **Left Button**, **Right Button**, and the **Chord** (both buttons) will **not** be intercepted by the host service. They will trigger standard OS mouse clicks.
+> - **Physical Buttons**: Because the device functions as a native HID mouse, the **Controls** tab's remappings for **Left Button**, **Right Button**, and the **Chord** (both buttons) will **not** be intercepted by the host service. They will trigger standard OS mouse clicks.
 > - **Taps & Gestures**: Taps (Top Tap, Front Tap, Back Tap, Left Tap, Right Tap) *are* processed by the service and can be bound to key combinations, mouse clicks, scrolls, macros, and profile modes.
