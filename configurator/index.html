@@ -3397,7 +3397,7 @@ const wizardStepData = [
     instruction: "Deflect puck fully FORWARD.",
     details: "Push the puck forward to your comfortable limit, then let go.",
     axisIndex: 1,
-    isPositive: true,
+    isPositive: false,
     key: 'y_pos',
     dirLabel: 'Forward'
   },
@@ -3406,7 +3406,7 @@ const wizardStepData = [
     instruction: "Deflect puck fully BACKWARD.",
     details: "Pull the puck backward to your comfortable limit, then let go.",
     axisIndex: 1,
-    isPositive: false,
+    isPositive: true,
     key: 'y_neg',
     dirLabel: 'Backward'
   },
@@ -3415,7 +3415,7 @@ const wizardStepData = [
     instruction: "Pull puck fully UP.",
     details: "Pull the puck upward to your comfortable limit, then let go.",
     axisIndex: 2,
-    isPositive: true,
+    isPositive: false,
     key: 'z_pos',
     dirLabel: 'Up'
   },
@@ -3424,7 +3424,7 @@ const wizardStepData = [
     instruction: "Push puck fully DOWN.",
     details: "Push the puck downward to your comfortable limit, then let go.",
     axisIndex: 2,
-    isPositive: false,
+    isPositive: true,
     key: 'z_neg',
     dirLabel: 'Down'
   },
@@ -4162,7 +4162,7 @@ function handleFlashMessage(msg) {
   }
 }
 
-let serviceVersion = '2.14.3';
+let serviceVersion = '2.14.4';
 let firmwareVersion = 'unknown';
 
 function handleVersionInfo(info) {

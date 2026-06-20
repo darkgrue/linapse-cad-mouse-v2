@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.4] - 2026-06-20
+
+### Fixed
+- **Axis Direction Mappings**: Corrected sign mappings in the host service and configurator calibration wizard steps for Y and Z axes to match physical motion directions.
+
 ## [2.14.3] - 2026-06-20
 
 ### Fixed

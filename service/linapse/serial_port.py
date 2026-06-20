@@ -179,8 +179,8 @@ def serial_thread(actions_ref):
                             
                             # Scale each axis depending on sign (positive vs negative direction)
                             x = x * sens.get("x_pos" if x >= 0 else "x_neg", 1.0)
-                            y = y * sens.get("y_pos" if y >= 0 else "y_neg", 1.0)
-                            z = z * sens.get("z_pos" if z >= 0 else "z_neg", 1.0)
+                            y = y * sens.get("y_pos" if y <= 0 else "y_neg", 1.0)
+                            z = z * sens.get("z_pos" if z <= 0 else "z_neg", 1.0)
                             rx = rx * sens.get("rx_pos" if rx >= 0 else "rx_neg", 1.0)
                             ry = ry * sens.get("ry_pos" if ry >= 0 else "ry_neg", 1.0)
                             rz = rz * sens.get("rz_pos" if rz >= 0 else "rz_neg", 1.0)
