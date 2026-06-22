@@ -2,6 +2,7 @@
 
 #include "Config.h"
 #include "Controllers.h"
+#include "HidSerialCommand.h"
 #include "LedConfig.h"
 #include "SensConfig.h"
 #include "StateMachine.h"
@@ -199,40 +200,12 @@ void handleSerial() {
     char c = (char)Serial.read();
     if (c == '\n' || c == '\r') {
       serialBuf.trim();
-      if      (serialBuf.startsWith("led "))    handleLedCommand(serialBuf.substring(4));
+      if      (handleHidSerialCommand(serialBuf, hidController)) { /* handled */ }
+      else if (serialBuf.startsWith("led "))    handleLedCommand(serialBuf.substring(4));
       else if (serialBuf.startsWith("config ")) handleConfigCommand(serialBuf.substring(7));
       else if (serialBuf.startsWith("sens "))   handleSensCommand(serialBuf.substring(5));
       else if (serialBuf.startsWith("debug "))  handleDebugCommand(serialBuf.substring(6));
-      else if (serialBuf == "version")          { Serial.println("version=2.16.8"); }
-      else if (serialBuf.startsWith("service_hid ")) {
-        int val = atoi(serialBuf.c_str() + 12);
-        g_serviceHidMode = (val != 0);
-        g_lastServicePacketMs = millis();
-        Serial.println("OK");
-      }
-      else if (serialBuf.startsWith("hid_report ")) {
-        g_lastServicePacketMs = millis();
-        const char* p = serialBuf.c_str() + 11;
-        float motion[6] = {0};
-        int parsed = 0;
-        for (int i = 0; i < 6; i++) {
-          while (*p == ' ') p++;
-          if (*p == '\0') break;
-          char* next;
-          float val = strtof(p, &next);
-          if (p == next) break;
-          motion[i] = val;
-          parsed++;
-          p = next;
-          while (*p == ' ' || *p == ',') p++;
-        }
-        if (parsed == 6) {
-          hidController.sendAxesReport(motion);
-          Serial.println("OK");
-        } else {
-          Serial.println("ERR hid_report requires 6 comma-separated floats");
-        }
-      }
+      else if (serialBuf == "version")          { Serial.println("version=2.18.0"); }
       else if (serialBuf.startsWith("volume ")) {
         int val = atoi(serialBuf.c_str() + 7);
         if (val >= 0 && val <= 100) {
