@@ -205,7 +205,7 @@ jobs:
 
       - name: Compile linapse-service
         run: |
-          pyinstaller --onefile --name linapse-service --hidden-import=pynput --hidden-import=hid --hidden-import=websockets --hidden-import=pycaw service/linapse-service
+          pyinstaller --onefile --noconsole --name linapse-service --hidden-import=pynput --hidden-import=hid --hidden-import=websockets --hidden-import=pycaw service/linapse-service
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

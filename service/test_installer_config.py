@@ -94,5 +94,14 @@ class TestInstallerConfig(unittest.TestCase):
         run_content = content.split("[Run]")[1].split("[")[0].strip()
         self.assertIn('Filename: "{app}\\linapse-service.exe"', run_content)
 
+        # Check [Registry] settings
+        self.assertIn("[Registry]", content)
+        registry_content = content.split("[Registry]")[1].split("[")[0].strip()
+        self.assertIn("Root: HKCU", registry_content)
+        self.assertIn('Subkey: "Software\\Microsoft\\Windows\\CurrentVersion\\Run"', registry_content)
+        self.assertIn('ValueName: "LinapseCADMouseService"', registry_content)
+        self.assertIn('ValueData: """{app}\\linapse-service.exe"""', registry_content)
+        self.assertIn("Flags: uninsdeletevalue", registry_content)
+
 if __name__ == "__main__":
     unittest.main()

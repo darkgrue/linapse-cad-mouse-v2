@@ -24,9 +24,9 @@ Windows does not use UNIX sockets or `udev` rules. Instead:
 1. Download the latest `LinapseServiceSetup.exe` installer directly from the [latest release download link](https://github.com/spikeon/linapse-cad-mouse-v2/releases/latest/download/LinapseServiceSetup.exe).
 2. Run the installer. It will:
    - Copy the service executable and the **Linapse Configurator** GUI files to your program files directory.
-   - Configure the service to start automatically as a background daemon whenever you log into Windows.
-   - Launch the service immediately.
-3. You will see a folder in your Start Menu under `Linapse CAD Mouse` containing shortcuts to the **Linapse Configurator** GUI, the background service, and an uninstaller.
+   - Configure the service to start automatically as a windowless background daemon (via the `Run` registry key) whenever you log into Windows.
+   - Launch the service immediately in the background.
+3. You will see a folder in your Start Menu under `Linapse CAD Mouse` containing shortcuts to the **Linapse Configurator** GUI, the background service, and an uninstaller. Since the service runs in the background with no console window, it starts invisibly.
 
 ### Option 2: Running from Source (Python)
 

@@ -1,6 +1,6 @@
 [Setup]
 AppName=Linapse CAD Mouse Service
-AppVersion=2.16.8
+AppVersion=2.17.0
 DefaultDirName={autopf}\LinapseCADMouse
 DefaultGroupName=Linapse CAD Mouse
 OutputDir=.
@@ -19,3 +19,6 @@ Name: "{group}\Uninstall Linapse"; Filename: "{uninstallexe}"
 
 [Run]
 Filename: "{app}\linapse-service.exe"; Flags: nowait postinstall skipifsilent
+
+[Registry]
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "LinapseCADMouseService"; ValueData: """{app}\linapse-service.exe"""; Flags: uninsdeletevalue
