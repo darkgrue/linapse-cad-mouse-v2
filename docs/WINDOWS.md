@@ -11,7 +11,7 @@ This guide helps you set up and configure the **CAD Mouse MK2** using **Linapse*
 
 Windows does not use UNIX sockets or `udev` rules. Instead:
 - **Motion Telemetry** is sent from the CAD Mouse MK2 over the USB Serial interface (COM port) to `linapse-service.exe`.
-- **Physical Buttons** are handled as standard USB HID mouse buttons directly from the device's hardware, meaning they do not pass through the host service for custom mapping.
+- **Physical Buttons** are sent over USB Serial to `linapse-service.exe`, just like Cap-Tap gestures, so they can be custom-mapped. When HID Emulation is enabled, a button left as **Native HID Button** is echoed back to the device's hardware to emit the real USB HID button press, so drivers like 3DxWare pick it up; any other mapping runs the custom action instead.
 - **Cap-Tap Gestures** are detected by the firmware, sent over USB Serial, and simulated on the host OS by the service using the `pynput` library.
 - **Browser CAD Applications** (such as OnShape or SketchUp Web) connect via a WebSocket connection (`ws://localhost:13000`) and a Tampermonkey userscript.
 
@@ -76,5 +76,5 @@ The configurator is an Electron app that interfaces with `linapse-service` over 
 ## Customization Differences on Windows
 
 > [!IMPORTANT]
-> - **Physical Buttons**: Because the device functions as a native HID mouse, the **Controls** tab's remappings for **Left Button**, **Right Button**, and the **Chord** (both buttons) will **not** be intercepted by the host service. They will trigger standard OS mouse clicks.
+> - **Physical Buttons**: With **HID Emulation** enabled, the **Controls** tab's remappings for **Left Button**, **Right Button**, and the **Chord** (both buttons) *are* applied by the host service. Set a button's action to **Native HID Button** to instead pass it straight through to the device's native USB HID button (e.g. for 3DxWare).
 > - **Taps & Gestures**: Taps (Top Tap, Front Tap, Back Tap, Left Tap, Right Tap) *are* processed by the service and can be bound to key combinations, mouse clicks, scrolls, macros, and profile modes.
