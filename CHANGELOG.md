@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.18.0] - 2026-06-22
+
+### Added
+- **Remappable Buttons in HID Emulation Mode**: Physical buttons now route through the service in HID emulation mode (`custom_usb.enabled`) like Cap-Tap gestures, so they can be custom-mapped. A new **Native HID Button** action passes a button straight through to the device's USB HID button (echoed back to the firmware via a new `hid_button` serial command) for drivers like 3DxWare; any other mapping runs the custom action. New firmware `service_buttons`/`hid_button` serial commands and a `g_serviceButtonMode` flag suppress local native button emission while the service drives buttons.
+
+### Changed
+- Extracted the firmware HID/service serial command family into a unit-tested `HidSerialCommand` module.
+
 ## [2.17.0] - 2026-06-22
 
 ### Added
