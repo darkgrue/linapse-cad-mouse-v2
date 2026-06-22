@@ -166,3 +166,17 @@ def test_route_button_emulation_off_falls_through(monkeypatch):
     assert sp.route_button(0, 1, actions, ser) is False
     ser.write.assert_not_called()
 
+def test_service_buttons_transition_logic():
+    # Mirrors the serial_thread transition guard.
+    writes = []
+    def emit(current, last):
+        if last is None or current != last:
+            writes.append(b"service_buttons 1\n" if current else b"service_buttons 0\n")
+            return current
+        return last
+    last = None
+    last = emit(True, last)   # enable
+    last = emit(True, last)   # no change
+    last = emit(False, last)  # disable
+    assert writes == [b"service_buttons 1\n", b"service_buttons 0\n"]
+

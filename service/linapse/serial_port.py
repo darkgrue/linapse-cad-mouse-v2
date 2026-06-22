@@ -152,6 +152,7 @@ def serial_thread(actions_ref):
                         print(f"[serial] failed to write initial LED/HID commands: {e}")
                         
             last_invert_z = None
+            last_custom_usb = None
             while True:
                 if state.flashing_active:
                     break
@@ -168,6 +169,18 @@ def serial_thread(actions_ref):
                             ser.write(f"sens set invert_tap_z {val}\n".encode())
                         except Exception as e:
                             print(f"[serial] failed to write invert_tap_z command: {e}")
+
+                # Tell the firmware to suppress local native button emission while
+                # HID emulation is on; the service drives buttons via hid_button.
+                custom_usb = actions.get("custom_usb", {}) if actions else {}
+                current_custom_usb = bool(custom_usb.get("enabled", False))
+                if last_custom_usb is None or current_custom_usb != last_custom_usb:
+                    last_custom_usb = current_custom_usb
+                    try:
+                        ser.write(b"service_buttons 1\n" if current_custom_usb
+                                  else b"service_buttons 0\n")
+                    except Exception as e:
+                        print(f"[serial] failed to write service_buttons: {e}")
 
                 line = ser.readline().decode(errors="replace").strip()
                 if not line:
