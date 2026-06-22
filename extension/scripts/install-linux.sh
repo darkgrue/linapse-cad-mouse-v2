@@ -25,8 +25,12 @@ CHROME_URL="$(read_meta chrome_web_store_url)"
 EDGE_URL="$(read_meta edge_addons_url)"
 FIREFOX_URL="$(read_meta firefox_addons_url)"
 
-FORCE_INSTALL_VALUE="${CHROME_ID};https://clients2.google.com/service/update2/crx"
-EDGE_FORCE_INSTALL_VALUE="${CHROME_ID};https://edge.microsoft.com/extensionwebstorebase/v1/crx"
+FORCE_INSTALL_VALUE=""
+EDGE_FORCE_INSTALL_VALUE=""
+if [ -n "$CHROME_ID" ]; then
+  FORCE_INSTALL_VALUE="${CHROME_ID};https://clients2.google.com/service/update2/crx"
+  EDGE_FORCE_INSTALL_VALUE="${CHROME_ID};https://edge.microsoft.com/extensionwebstorebase/v1/crx"
+fi
 
 install_chrome_policy() {
   local policy_dir="$1"
@@ -87,7 +91,10 @@ open_store_pages() {
 section "Linapse Browser Connector"
 
 POLICY_INSTALLED=0
-if [ "${EUID:-$(id -u)}" -eq 0 ] || [ "${LINAPSE_INSTALL_BROWSER_POLICY:-0}" = "1" ]; then
+if [ -z "$CHROME_ID" ]; then
+  info "chrome_extension_id is not set in extension-id.json — skipping managed policy install."
+  info "After Chrome Web Store publish, add the Item ID to extension-id.json for force-install."
+elif [ "${EUID:-$(id -u)}" -eq 0 ] || [ "${LINAPSE_INSTALL_BROWSER_POLICY:-0}" = "1" ]; then
   section "Installing managed browser policies (requires sudo for system-wide install)"
   if [ "${EUID:-$(id -u)}" -ne 0 ]; then
     sudo "$0" "$@" || info "Policy install skipped (declined or failed)."

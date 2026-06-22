@@ -6,7 +6,8 @@
   "license": "GPL-3.0",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "publish:chrome": "node scripts/publish-chrome.mjs"
+    "publish:chrome": "node scripts/publish-chrome.mjs",
+    "store-screenshot": "node scripts/generate-store-screenshot.mjs"
   },
   "devDependencies": {
     "archiver": "^7.0.1",

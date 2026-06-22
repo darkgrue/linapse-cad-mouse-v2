@@ -7,4 +7,5 @@ See **[docs/BROWSER_EXTENSION.md](../docs/BROWSER_EXTENSION.md)** for install li
 ```bash
 npm install
 npm run build
+npm run store-screenshot
 ```

@@ -30,6 +30,8 @@ async function buildVariant(name, manifestTemplatePath) {
 
   const manifest = JSON.parse(readFileSync(manifestTemplatePath, 'utf8'));
   manifest.version = VERSION;
+  // Chrome Web Store rejects uploads that include manifest.key.
+  delete manifest.key;
   writeFileSync(join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   cpSync(join(EXT_DIR, 'src', 'content.js'), join(outDir, 'content.js'));
 

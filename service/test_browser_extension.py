@@ -29,6 +29,11 @@ def test_extension_manifests_define_expected_matches():
         assert manifest["content_scripts"][0]["world"] == "MAIN"
 
 
+def test_chrome_manifest_has_no_key_field():
+    manifest = _load_manifest("manifest.chrome.json")
+    assert "key" not in manifest, "manifest.key is rejected by Chrome Web Store uploads"
+
+
 def test_extension_content_script_spoofs_platform():
     content = (EXT / "src" / "content.js").read_text()
     assert "Object.defineProperty(navigator, 'platform'" in content
@@ -37,6 +42,8 @@ def test_extension_content_script_spoofs_platform():
 
 def test_extension_id_metadata_present():
     meta = json.loads((EXT / "extension-id.json").read_text())
-    assert re.fullmatch(r"[a-p]{32}", meta["chrome_extension_id"])
+    chrome_id = meta["chrome_extension_id"]
+    assert re.fullmatch(r"[a-p]{32}", chrome_id)
+    assert chrome_id == "bphljljooniagodmibficbocoemkpioc"
     assert meta["firefox_extension_id"].endswith("@cadmouse.mk2")
     assert "chromewebstore.google.com" in meta["chrome_web_store_url"]

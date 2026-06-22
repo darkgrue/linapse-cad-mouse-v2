@@ -36,7 +36,7 @@ function Install-EdgePolicy {
 Write-Host ''
 Write-Host '==> Linapse Browser Connector'
 
-if ($UsePolicy -or $env:LINAPSE_INSTALL_BROWSER_POLICY -eq '1') {
+if (($UsePolicy -or $env:LINAPSE_INSTALL_BROWSER_POLICY -eq '1') -and $ChromeId) {
     Write-Host ''
     Write-Host '==> Installing managed browser policies'
     foreach ($Root in @('HKLM:\', 'HKCU:\')) {
@@ -44,6 +44,8 @@ if ($UsePolicy -or $env:LINAPSE_INSTALL_BROWSER_POLICY -eq '1') {
         Install-EdgePolicy -RootKey $Root
     }
     Write-Info 'Restart Chrome and Edge to apply policies.'
+} elseif ($UsePolicy -or $env:LINAPSE_INSTALL_BROWSER_POLICY -eq '1') {
+    Write-Info 'chrome_extension_id is not set in extension-id.json — skipping managed policy install.'
 } else {
     Write-Info 'Opening official store pages for manual install...'
     Start-Process $ChromeUrl
