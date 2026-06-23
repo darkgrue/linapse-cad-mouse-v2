@@ -644,8 +644,12 @@ jobs:
 
           # Create GPG wrapper script to inject loopback pinentry and passphrase file non-interactively
           echo '#!/bin/sh' > ~/gpg-wrapper.sh
+          echo "echo '=== Wrapper executed with args: \$*' >> ~/gpg_wrapper.log" >> ~/gpg-wrapper.sh
           echo "exec gpg --batch --no-tty --pinentry-mode loopback --passphrase-file $HOME/gpg-passphrase.txt \"\$@\"" >> ~/gpg-wrapper.sh
           chmod +x ~/gpg-wrapper.sh
+          
+          # Force debsign to use wrapper via devscripts config
+          echo "DEBSIGN_PROGRAM=$HOME/gpg-wrapper.sh" > ~/.devscripts
           
           VERSION=$(cat VERSION | tr -d '\r\n[:space:]')
           
@@ -682,10 +686,13 @@ jobs:
             }
             
             # Sign manually using debsign with loopback GPG wrapper script to prevent TTY prompt
-            DEBSIGN_PROGRAM="$HOME/gpg-wrapper.sh" debsign -k"$KEY_ID" ../linapse-cad-mouse_${VERSION}*_source.changes > debsign.log 2>&1 || {
+            DEBSIGN_PROGRAM="$HOME/gpg-wrapper.sh" debsign -p"$HOME/gpg-wrapper.sh" -k"$KEY_ID" ../linapse-cad-mouse_${VERSION}*_source.changes > debsign.log 2>&1 || {
               cat debsign.log
+              echo "=== gpg_wrapper.log ==="
+              cat ~/gpg_wrapper.log || true
               mkdir -p ci_logs
               cp debsign.log ci_logs/debsign_${dist}.log
+              cp ~/gpg_wrapper.log ci_logs/gpg_wrapper_${dist}.log || true
               exit 1
             }
             

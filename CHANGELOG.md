@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.21.26] - 2026-06-23
+
+### Fixed
+- **Release Automation**: Configure ~/.devscripts and debsign command-line -p parameter to ensure the custom GPG wrapper script is invoked, and add execution logging.
+
 ## [2.21.25] - 2026-06-23
 
 ### Fixed

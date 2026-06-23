@@ -3,7 +3,7 @@
 %{!?_udevrulesdir: %global _udevrulesdir %{_prefix}/lib/udev/rules.d}
 
 Name:           linapse-cad-mouse
-Version:        2.21.25
+Version:        2.21.26
 Release:        1%{?dist}
 Summary:        CAD Mouse MK2 Linapse driver service and configurator
 
@@ -141,6 +141,9 @@ install -Dm644 service/udev/99-spacemouse.rules %{buildroot}%{_udevrulesdir}/99-
 %{_udevrulesdir}/99-spacemouse.rules
 
 %changelog
+* Tue Jun 23 2026 spikeon <spikeon@example.com> - 2.21.26-1
+- Fix Ubuntu PPA signing using loopback GPG wrapper script and devscripts config, and bump version to 2.21.26
+
 * Tue Jun 23 2026 spikeon <spikeon@example.com> - 2.21.25-1
 - Expand absolute path in GPG wrapper script and add passphrase diagnostics and bump version to 2.21.25
 
