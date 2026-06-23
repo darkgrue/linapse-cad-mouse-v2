@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.21.2] - 2026-06-23
+
+### Fixed
+- **Motion Kalman Anti-Windup**: Added anti-windup clamping to the Kalman filter state in the firmware, reducing response latency when reversing/releasing maximum deflections.
+
+## [2.21.1] - 2026-06-23
+
+### Changed
+- **Device Connection Status**: Decoupled the UI connection status from the WebSocket service connection. The status dot and text now indicate whether the physical CAD mouse device is connected.
+- **WebSocket Broadcasts**: Added automatic WebSocket broadcasts in the service whenever the device serial connection status changes.
+
 ## [2.21.0] - 2026-06-23
 
 ### Added

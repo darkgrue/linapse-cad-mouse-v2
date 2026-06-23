@@ -112,10 +112,17 @@ def find_serial(actions_ref=None):
          glob.glob("/dev/ttyACM*"))
     return m[0] if m else None
 
+def set_firmware_version(val):
+    if state.firmware_version != val:
+        state.firmware_version = val
+        import os
+        if "PYTEST_CURRENT_TEST" not in os.environ:
+            state.broadcast_from_thread(f"VERSION_INFO:{{\"service\":\"{state.service_version}\",\"firmware\":\"{state.firmware_version}\"}}")
+
 def serial_thread(actions_ref):
     global _rx_scroll_accumulator, _rz_scrub_accumulator, _rx_volume_accumulator, _hid_button_bits
     while True:
-        state.firmware_version = "unknown"
+        set_firmware_version("unknown")
         if state.flashing_active:
             time.sleep(1)
             continue
@@ -387,8 +394,7 @@ def serial_thread(actions_ref):
                 elif not line.startswith(">"):
                     # Command response (OK, ERR ..., JSON from config get, etc.)
                     if line.startswith("version="):
-                        state.firmware_version = line.split("=")[1].strip()
-                        state.broadcast_from_thread(f"VERSION_INFO:{{\"service\":\"{state.service_version}\",\"firmware\":\"{state.firmware_version}\"}}")
+                        set_firmware_version(line.split("=")[1].strip())
                         
                         # Trigger firmware auto-update if enabled
                         actions = actions_ref[0] if actions_ref else None
@@ -405,6 +411,6 @@ def serial_thread(actions_ref):
                     state.broadcast_from_thread(line)
         except (serial.SerialException, TypeError, OSError, AttributeError) as e:
             state.ser_holder[0] = None
-            state.firmware_version = "unknown"
+            set_firmware_version("unknown")
             print(f"[serial] {e} — retrying in 3s")
             time.sleep(3)

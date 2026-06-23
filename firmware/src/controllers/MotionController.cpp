@@ -96,6 +96,13 @@ float MotionController::kalmanStep(int axis, float measurement) {
   // Update uncertainty
   kalmanP_[axis] *= (1.0f - K);
 
+  // Anti-windup
+  if (kalmanX_[axis] > Config::AXIS_LIMIT) {
+    kalmanX_[axis] = Config::AXIS_LIMIT;
+  } else if (kalmanX_[axis] < -Config::AXIS_LIMIT) {
+    kalmanX_[axis] = -Config::AXIS_LIMIT;
+  }
+
   return kalmanX_[axis];
 }
 

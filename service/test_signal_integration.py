@@ -134,6 +134,8 @@ class MockSerial:
         
     def write(self, data):
         self.written_data.append(data)
+        if data == b"version\n":
+            self.input_queue.put(f"version={linapse_service.state.service_version}\n".encode())
         
     def close(self):
         self.is_open = False
@@ -900,21 +902,27 @@ def test_dominant_mode(running_service):
     async def run_dominant_test():
         uri = f"ws://localhost:{ws_port}"
         async with websockets.connect(uri) as ws:
+            async def recv_motion():
+                while True:
+                    msg = await asyncio.wait_for(ws.recv(), timeout=1.0)
+                    if msg.startswith("MOTION:"):
+                        return msg
+
             # 1. Pure translation should work normally
             mock_serial.input_queue.put(b">MOTION:10.0,0,0,0,0,0\n")
-            msg1 = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            msg1 = await recv_motion()
             assert msg1 == "MOTION:10.0,0.0,0.0,0.0,0.0,0.0"
             
             # 2. Combined: translation (10.0) is dominant over rotation (5.0) under bias 1.0.
             # Translation should pass, rotation should be zeroed.
             mock_serial.input_queue.put(b">MOTION:10.0,0,0,5.0,0,0\n")
-            msg2 = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            msg2 = await recv_motion()
             assert msg2 == "MOTION:10.0,0.0,0.0,0.0,0.0,0.0"
 
             # 3. Combined: rotation (15.0) is dominant over translation (10.0) under bias 1.0.
             # Rotation should pass, translation should be zeroed.
             mock_serial.input_queue.put(b">MOTION:10.0,0,0,15.0,0,0\n")
-            msg3 = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            msg3 = await recv_motion()
             assert msg3 == "MOTION:0.0,0.0,0.0,15.0,0.0,0.0"
 
             # 4. Set bias to 2.0.
@@ -923,13 +931,13 @@ def test_dominant_mode(running_service):
             # Rotation should pass, translation should be zeroed.
             running_service_actions["dominant_mode_bias"] = 2.0
             mock_serial.input_queue.put(b">MOTION:10.0,0,0,6.0,0,0\n")
-            msg_bias = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            msg_bias = await recv_motion()
             assert msg_bias == "MOTION:0.0,0.0,0.0,6.0,0.0,0.0"
             
             # 5. Disable dominant mode and verify both are allowed
             running_service_actions["dominant_mode"] = False
             mock_serial.input_queue.put(b">MOTION:10.0,0,0,15.0,0,0\n")
-            msg4 = await asyncio.wait_for(ws.recv(), timeout=1.0)
+            msg4 = await recv_motion()
             assert msg4 == "MOTION:10.0,0.0,0.0,15.0,0.0,0.0"
 
     try:

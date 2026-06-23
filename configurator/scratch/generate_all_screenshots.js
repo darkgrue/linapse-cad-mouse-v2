@@ -33,6 +33,7 @@ const fs = require('fs');
 
   // Set connected status to show green/connected dot
   await page.evaluate(() => {
+    firmwareVersion = '2.21.1';
     setConnected(true);
   });
   

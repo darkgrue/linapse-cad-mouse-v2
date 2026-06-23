@@ -3006,12 +3006,21 @@ function toggleConnect() {
 }
 
 function setConnected(on) {
-  document.getElementById('connDot').classList.toggle('connected', on);
-  document.getElementById('connStatus').classList.toggle('connected', on);
-  document.getElementById('connText').textContent = on ? 'Connected' : 'Disconnected';
+  wsConnected = on;
+  if (!on) {
+    firmwareVersion = 'unknown';
+  }
+  updateConnectionState();
+}
+
+function updateConnectionState() {
+  const deviceConnected = wsConnected && (firmwareVersion !== 'unknown');
+  document.getElementById('connDot').classList.toggle('connected', deviceConnected);
+  document.getElementById('connStatus').classList.toggle('connected', deviceConnected);
+  document.getElementById('connText').textContent = deviceConnected ? 'Connected' : 'Disconnected';
   const btn = document.getElementById('btnConnect');
-  btn.textContent = on ? 'Disconnect' : 'Connect';
-  btn.classList.toggle('connected', on);
+  btn.textContent = wsConnected ? 'Disconnect' : 'Connect';
+  btn.classList.toggle('connected', wsConnected);
 }
 
 function sendCmd(cmd) {
@@ -4395,10 +4404,12 @@ function handleFlashMessage(msg) {
 
 let serviceVersion = '2.16.8';
 let firmwareVersion = 'unknown';
+let wsConnected = false;
 
 function handleVersionInfo(info) {
   serviceVersion = info.service || '2.10.5';
   firmwareVersion = info.firmware || 'unknown';
+  updateConnectionState();
   
   const badge = document.getElementById('fwBadge');
   const notice = document.getElementById('fwUpdateNotice');
