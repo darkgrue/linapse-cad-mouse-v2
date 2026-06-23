@@ -249,15 +249,16 @@ async def main():
     threading.Thread(target=volume.volume_watcher, daemon=True).start()
     threading.Thread(target=equalizer.equalizer_watcher, args=(actions_ref,), daemon=True).start()
 
-    def updater_loop():
-        time.sleep(5)  # Wait for WebSocket/Serial to initialize
-        while True:
-            try:
-                updater.check_for_updates(quiet=True)
-            except Exception as e:
-                print(f"[updater] background check error: {e}")
-            time.sleep(86400)
-    threading.Thread(target=updater_loop, daemon=True).start()
+    if "PYTEST_CURRENT_TEST" not in os.environ:
+        def updater_loop():
+            time.sleep(5)  # Wait for WebSocket/Serial to initialize
+            while True:
+                try:
+                    updater.check_for_updates(quiet=True)
+                except Exception as e:
+                    print(f"[updater] background check error: {e}")
+                time.sleep(86400)
+        threading.Thread(target=updater_loop, daemon=True).start()
 
     asyncio.create_task(serial_writer())
 
