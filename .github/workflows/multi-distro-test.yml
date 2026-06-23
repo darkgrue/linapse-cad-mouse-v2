@@ -587,11 +587,13 @@ jobs:
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ env.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Prepare Debian source package and upload
         if: ${{ env.GPG_PRIVATE_KEY != '' }}
         env:
           PPA_OWNER: ${{ vars.PPA_OWNER }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           if [ -z "$PPA_OWNER" ]; then
             echo "Launchpad PPA owner not configured. Skipping PPA release."
@@ -628,9 +630,9 @@ jobs:
             gpg-connect-agent 'GETINFO version' /bye || true
           } >> ci_logs/gpg_debug.log 2>&1
           
-          # Create GPG wrapper script to inject loopback pinentry and empty passphrase non-interactively
+          # Create GPG wrapper script to inject loopback pinentry and passphrase non-interactively
           echo '#!/bin/sh' > ~/gpg-wrapper.sh
-          echo 'exec gpg --batch --no-tty --pinentry-mode loopback --passphrase "" "$@"' >> ~/gpg-wrapper.sh
+          echo 'exec gpg --batch --no-tty --pinentry-mode loopback --passphrase "${GPG_PASSPHRASE:-}" "$@"' >> ~/gpg-wrapper.sh
           chmod +x ~/gpg-wrapper.sh
           
           VERSION=$(cat VERSION | tr -d '\r\n[:space:]')
