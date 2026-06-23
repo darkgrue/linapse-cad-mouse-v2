@@ -577,31 +577,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y debhelper devscripts dput gnupg dh-python
 
+      - name: Import GPG key
+        id: import-gpg
+        if: secrets.GPG_PRIVATE_KEY != ''
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+
       - name: Prepare Debian source package and upload
         env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           PPA_OWNER: ${{ vars.PPA_OWNER }}
         run: |
-          if [ -z "$GPG_PRIVATE_KEY" ] || [ -z "$PPA_OWNER" ]; then
+          if [ -z "${{ secrets.GPG_PRIVATE_KEY }}" ] || [ -z "$PPA_OWNER" ]; then
             echo "Launchpad GPG key or PPA owner secret/var not configured. Skipping PPA release."
             exit 0
           fi
-          
-          # Configure GPG to allow loopback pinentry in CI
-          mkdir -p ~/.gnupg
-          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
-          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
-          chmod 700 ~/.gnupg
-          chmod 600 ~/.gnupg/*
-          gpgconf --kill gpg-agent
-          
-          # Import GPG key
-          echo "$GPG_PRIVATE_KEY" | gpg --import --batch --yes
-          
-          # Create GPG wrapper script to avoid stdin exhaustion and shell escaping issues in debsign
-          echo '#!/bin/sh' > ~/.gnupg/gpg-wrapper.sh
-          echo 'echo "" | gpg --batch --no-tty --pinentry-mode loopback --passphrase-fd 0 "$@"' >> ~/.gnupg/gpg-wrapper.sh
-          chmod +x ~/.gnupg/gpg-wrapper.sh
           
           VERSION=$(cat VERSION | tr -d '\r\n[:space:]')
           
@@ -632,8 +622,8 @@ jobs:
             # Build source package unsigned (debuild + debsign)
             debuild -S -sa -d -i -I -us -uc
             
-            # Sign manually using debsign with loopback GPG options via wrapper script
-            debsign -k"$KEY_ID" -p"$HOME/.gnupg/gpg-wrapper.sh" ../linapse-cad-mouse_${VERSION}*_source.changes
+            # Sign manually using debsign
+            debsign -k"$KEY_ID" ../linapse-cad-mouse_${VERSION}*_source.changes
             
             # Upload
             dput linapse-ppa ../linapse-cad-mouse_${VERSION}*_source.changes
