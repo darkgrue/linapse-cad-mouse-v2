@@ -3,7 +3,7 @@
 %{!?_udevrulesdir: %global _udevrulesdir %{_prefix}/lib/udev/rules.d}
 
 Name:           linapse-cad-mouse
-Version:        2.21.23
+Version:        2.21.24
 Release:        1%{?dist}
 Summary:        CAD Mouse MK2 Linapse driver service and configurator
 
@@ -141,6 +141,9 @@ install -Dm644 service/udev/99-spacemouse.rules %{buildroot}%{_udevrulesdir}/99-
 %{_udevrulesdir}/99-spacemouse.rules
 
 %changelog
+* Tue Jun 23 2026 spikeon <spikeon@example.com> - 2.21.24-1
+- Fix gpg-agent.conf newline bug and use DEBSIGN_PROGRAM environment variable and bump version to 2.21.24
+
 * Tue Jun 23 2026 spikeon <spikeon@example.com> - 2.21.23-1
 - Configure passphrase-file in GPG wrapper script and add Git pull retry to PPA failure log step and bump version to 2.21.23
 

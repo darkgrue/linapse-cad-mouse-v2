@@ -603,6 +603,7 @@ jobs:
           # Configure GPG agent to allow loopback pinentry
           GPG_DIR="${GNUPGHOME:-$HOME/.gnupg}"
           mkdir -p "$GPG_DIR"
+          echo "" >> "$GPG_DIR/gpg-agent.conf"
           echo "allow-loopback-pinentry" >> "$GPG_DIR/gpg-agent.conf"
           echo "pinentry-mode loopback" >> "$GPG_DIR/gpg.conf"
           
@@ -674,7 +675,7 @@ jobs:
             }
             
             # Sign manually using debsign with loopback GPG wrapper script to prevent TTY prompt
-            debsign -k"$KEY_ID" -p"$HOME/gpg-wrapper.sh" ../linapse-cad-mouse_${VERSION}*_source.changes > debsign.log 2>&1 || {
+            DEBSIGN_PROGRAM="$HOME/gpg-wrapper.sh" debsign -k"$KEY_ID" ../linapse-cad-mouse_${VERSION}*_source.changes > debsign.log 2>&1 || {
               cat debsign.log
               mkdir -p ci_logs
               cp debsign.log ci_logs/debsign_${dist}.log
