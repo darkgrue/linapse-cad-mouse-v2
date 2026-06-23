@@ -1084,27 +1084,45 @@ def test_mouse_mode_and_double_chord_switch(running_service):
     # Reset mouse accumulators
     linapse_service._mouse_x_accumulator = 0.0
     linapse_service._mouse_y_accumulator = 0.0
+    linapse_service._mouse_scroll_accumulator = 0.0
     
     ydotool_calls.clear()
     
     # Send pure translation (X=10, Y=5.0)
     # x = 10.0 (right), y = 5.0 (forward)
-    # Should result in mouse movement to right and up (dx=10, dy=-5)
+    # Should result in NO mouse movement (translation ignored)
     mock_serial.input_queue.put(b">MOTION:10.0,5.0,0,0,0,0\n")
     time.sleep(0.05)
     
-    # Check ydotool calls
-    assert len(ydotool_calls) == 1
-    assert ydotool_calls[0] == ["ydotool", "mousemove", "--", "10", "-5"]
+    # Check ydotool calls - should be none
+    assert len(ydotool_calls) == 0
     ydotool_calls.clear()
     
     # Send pure rotation (ry=8.0, rx=4.0)
     # rx = 4.0 (tilt forward), ry = 8.0 (tilt right)
-    # Should result in mouse movement to right and up (dx=8, dy=-4)
+    # Tilt is inverted, so:
+    # dx = -ry = -8
+    # dy = +rx = 4
     mock_serial.input_queue.put(b">MOTION:0,0,0,4.0,8.0,0\n")
     time.sleep(0.05)
     
     assert len(ydotool_calls) == 1
-    assert ydotool_calls[0] == ["ydotool", "mousemove", "--", "8", "-4"]
+    assert ydotool_calls[0] == ["ydotool", "mousemove", "--", "-8", "4"]
+    ydotool_calls.clear()
+
+    # Send Z axis spin / twist (rz=160.0, scroll down)
+    mock_serial.input_queue.put(b">MOTION:0,0,0,0,0,160.0\n")
+    time.sleep(0.05)
+
+    assert len(ydotool_calls) == 1
+    assert ydotool_calls[0] == ["ydotool", "mousemove", "-w", "--", "0", "1"]
+    ydotool_calls.clear()
+
+    # Send Z axis spin / twist (rz=-160.0, scroll up)
+    mock_serial.input_queue.put(b">MOTION:0,0,0,0,0,-160.0\n")
+    time.sleep(0.05)
+
+    assert len(ydotool_calls) == 1
+    assert ydotool_calls[0] == ["ydotool", "mousemove", "-w", "--", "0", "-1"]
     ydotool_calls.clear()
 

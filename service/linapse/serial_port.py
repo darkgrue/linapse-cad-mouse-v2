@@ -22,6 +22,7 @@ _rz_scrub_accumulator = 0.0
 _rx_volume_accumulator = 0.0
 _mouse_x_accumulator = 0.0
 _mouse_y_accumulator = 0.0
+_mouse_scroll_accumulator = 0.0
 
 _hid_button_bits = 0
 
@@ -345,15 +346,29 @@ def serial_thread(actions_ref):
                                     _rx_volume_accumulator += presses * 250.0
 
                             elif current_mode == "Mouse":
-                                global _mouse_x_accumulator, _mouse_y_accumulator
-                                _mouse_x_accumulator += x + ry
-                                _mouse_y_accumulator -= y + rx
+                                global _mouse_x_accumulator, _mouse_y_accumulator, _mouse_scroll_accumulator
+                                _mouse_x_accumulator -= ry
+                                _mouse_y_accumulator += rx
                                 ix = int(_mouse_x_accumulator)
                                 iy = int(_mouse_y_accumulator)
                                 _mouse_x_accumulator -= ix
                                 _mouse_y_accumulator -= iy
                                 if ix != 0 or iy != 0:
                                     dispatch({"action": "mouse_move", "x": ix, "y": iy})
+
+                                if abs(rz) > 15.0:
+                                    _mouse_scroll_accumulator += rz
+                                else:
+                                    _mouse_scroll_accumulator *= 0.8
+
+                                if _mouse_scroll_accumulator >= 150.0:
+                                    scrolls = int(_mouse_scroll_accumulator // 150.0)
+                                    dispatch({"action": "mouse_scroll", "direction": "down", "amount": scrolls})
+                                    _mouse_scroll_accumulator -= scrolls * 150.0
+                                elif _mouse_scroll_accumulator <= -150.0:
+                                    scrolls = int(-_mouse_scroll_accumulator // 150.0)
+                                    dispatch({"action": "mouse_scroll", "direction": "up", "amount": scrolls})
+                                    _mouse_scroll_accumulator += scrolls * 150.0
 
                             # Send processed coordinates back to the device to emit via USB HID
                             try:

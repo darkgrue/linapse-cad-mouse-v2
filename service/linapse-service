@@ -63,10 +63,12 @@ class LinapseServiceModule(types.ModuleType):
         if name == "_broadcast_from_thread": return state.broadcast_from_thread
         if name == "_broadcast_socket": return state.broadcast_socket
         if name == "_broadcast_socket_from_thread": return state.broadcast_socket_from_thread
-        
         if name == "_rx_scroll_accumulator": return serial_port._rx_scroll_accumulator
         if name == "_rz_scrub_accumulator": return serial_port._rz_scrub_accumulator
         if name == "_rx_volume_accumulator": return serial_port._rx_volume_accumulator
+        if name == "_mouse_x_accumulator": return serial_port._mouse_x_accumulator
+        if name == "_mouse_y_accumulator": return serial_port._mouse_y_accumulator
+        if name == "_mouse_scroll_accumulator": return serial_port._mouse_scroll_accumulator
         if name == "_on_press": return hid._on_press
         if name == "_on_release": return hid._on_release
         if name == "_on_single": return hid._on_single
@@ -107,9 +109,9 @@ class LinapseServiceModule(types.ModuleType):
         if name == "ws_handler": return websocket.ws_handler
         if name == "handle_socket_client": return spnav.handle_socket_client
         if name == "flash_device": return flashing.flash_device
-
+ 
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
+ 
     def __setattr__(self, name, value):
         if name == "_loop": state.loop = value
         elif name == "_serial_queue": state.serial_queue = value
@@ -128,6 +130,9 @@ class LinapseServiceModule(types.ModuleType):
         elif name == "_rx_scroll_accumulator": serial_port._rx_scroll_accumulator = value
         elif name == "_rz_scrub_accumulator": serial_port._rz_scrub_accumulator = value
         elif name == "_rx_volume_accumulator": serial_port._rx_volume_accumulator = value
+        elif name == "_mouse_x_accumulator": serial_port._mouse_x_accumulator = value
+        elif name == "_mouse_y_accumulator": serial_port._mouse_y_accumulator = value
+        elif name == "_mouse_scroll_accumulator": serial_port._mouse_scroll_accumulator = value
         elif name == "_on_press": hid._on_press = value
         elif name == "_on_release": hid._on_release = value
         elif name == "_on_single": hid._on_single = value

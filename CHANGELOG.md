@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.21.5] - 2026-06-23
+
+### Changed
+- **Mouse Mode Translation**: Disabled translation input from moving the mouse cursor in Mouse mode.
+- **Mouse Mode Tilt Movement**: Configured Mouse mode cursor movement to be driven purely by tilt.
+- **Mouse Mode Tilt Inversion**: Flipped/inverted the tilt movement directions so tilting left/right and forward/backward matches intuitive expectations.
+- **Mouse Mode Scroll**: Map Z-axis spin (rz rotation) to trigger scroll up and down.
+
 ## [2.21.4] - 2026-06-23
 
 ### Fixed
