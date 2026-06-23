@@ -105,7 +105,8 @@ def load_actions():
                             "0": {"action": "mouse_scroll", "direction": "down", "amount": 1},
                             "1": {"action": "mouse_scroll", "direction": "up", "amount": 1},
                             "chord": {"action": "key", "value": "shift+7"},
-                            "chord:2": {"action": "mode", "value": "Browser"}
+                            "chord:2": {"action": "mode", "value": "Mouse"},
+                            "chord:3": {"action": "mode", "value": "Browser"}
                         },
                         "taps": {
                             "top:1": {"action": "mouse_click", "button": "left"},
@@ -127,7 +128,8 @@ def load_actions():
                             "0": {"action": "mouse_scroll", "direction": "down", "amount": 1},
                             "1": {"action": "mouse_scroll", "direction": "up", "amount": 1},
                             "chord": {"action": "key", "value": "shift+7"},
-                            "chord:2": {"action": "mode", "value": "Browser"}
+                            "chord:2": {"action": "mode", "value": "Mouse"},
+                            "chord:3": {"action": "mode", "value": "Browser"}
                         },
                         "taps": {
                             "top:1": {"action": "mouse_click", "button": "left"},
@@ -148,7 +150,8 @@ def load_actions():
                         "buttons": {
                             "0": {"action": "key", "value": "ctrl+pageup"},
                             "1": {"action": "key", "value": "ctrl+pagedown"},
-                            "chord:2": {"action": "mode", "value": "Media"}
+                            "chord:2": {"action": "mode", "value": "Default"},
+                            "chord:3": {"action": "mode", "value": "Media"}
                         },
                         "taps": {
                             "top:2": {"action": "none"}
@@ -163,7 +166,8 @@ def load_actions():
                         "buttons": {
                             "0": {"action": "key", "value": "prev"},
                             "1": {"action": "key", "value": "next"},
-                            "chord:2": {"action": "mode", "value": "Mouse"}
+                            "chord:2": {"action": "mode", "value": "Browser"},
+                            "chord:3": {"action": "mode", "value": "Mouse"}
                         },
                         "taps": {
                             "top:2": {"action": "none"}
@@ -178,7 +182,8 @@ def load_actions():
                         "buttons": {
                             "0": {"action": "mouse_click", "button": "left"},
                             "1": {"action": "mouse_click", "button": "right"},
-                            "chord:2": {"action": "mode", "value": "Default"}
+                            "chord:2": {"action": "mode", "value": "Media"},
+                            "chord:3": {"action": "mode", "value": "Default"}
                         },
                         "taps": {
                             "top:1": {"action": "mouse_click", "button": "left"},
@@ -223,7 +228,8 @@ def load_actions():
                 "buttons": {
                     "0": {"action": "key", "value": "ctrl+pageup"},
                     "1": {"action": "key", "value": "ctrl+pagedown"},
-                    "chord:2": {"action": "mode", "value": "Media"}
+                    "chord:2": {"action": "mode", "value": "Default"},
+                    "chord:3": {"action": "mode", "value": "Media"}
                 },
                 "taps": {
                     "top:2": {"action": "none"}
@@ -237,7 +243,8 @@ def load_actions():
                 "buttons": {
                     "0": {"action": "key", "value": "prev"},
                     "1": {"action": "key", "value": "next"},
-                    "chord:2": {"action": "mode", "value": "Mouse"}
+                    "chord:2": {"action": "mode", "value": "Browser"},
+                    "chord:3": {"action": "mode", "value": "Mouse"}
                 },
                 "taps": {
                     "top:2": {"action": "none"}
@@ -258,7 +265,8 @@ def load_actions():
                 "buttons": {
                     "0": {"action": "mouse_click", "button": "left"},
                     "1": {"action": "mouse_click", "button": "right"},
-                    "chord:2": {"action": "mode", "value": "Default"}
+                    "chord:2": {"action": "mode", "value": "Media"},
+                    "chord:3": {"action": "mode", "value": "Default"}
                 },
                 "taps": {
                     "top:1": {"action": "mouse_click", "button": "left"},
@@ -268,36 +276,58 @@ def load_actions():
             }
             migrated = True
 
-        # Ensure all existing modes have their double chord (chord:2) and old top:2 cleaned up
-        mode_cycle_mapping = {
+        # Ensure all existing modes have their double chord (chord:2) and triple chord (chord:3)
+        mode_cycle_mapping_double = {
+            "Default": "Mouse",
+            "Browser": "Default",
+            "Media": "Browser",
+            "Mouse": "Media"
+        }
+        mode_cycle_mapping_triple = {
             "Default": "Browser",
             "Browser": "Media",
             "Media": "Mouse",
             "Mouse": "Default"
         }
-        for mname, target in mode_cycle_mapping.items():
+        for mname in ["Default", "Browser", "Media", "Mouse"]:
             if mname in actions["modes"]:
                 mode_cfg = actions["modes"][mname]
-                
-                # We only migrate to chord:2 if we actually detect the legacy mode switch in taps
+                if "buttons" not in mode_cfg:
+                    mode_cfg["buttons"] = {}
+
+                # 1. We check if they have the legacy taps top:2 mode switch to migrate from
                 has_old_switch = False
                 if "taps" in mode_cfg and "top:2" in mode_cfg["taps"]:
                     tap_act = mode_cfg["taps"]["top:2"]
                     if tap_act.get("action") == "mode":
                         has_old_switch = True
-                
+
+                # If they have old top:2 switch, clean it up
                 if has_old_switch:
-                    actual_target = mode_cfg["taps"]["top:2"].get("value") or target
-                    if "buttons" not in mode_cfg:
-                        mode_cfg["buttons"] = {}
-                    if mode_cfg["buttons"].get("chord:2", {}).get("value") != actual_target:
-                        mode_cfg["buttons"]["chord:2"] = {"action": "mode", "value": actual_target}
-                        migrated = True
-                    
                     if mname == "Mouse":
                         mode_cfg["taps"]["top:2"] = {"action": "mouse_click", "button": "right"}
                     else:
                         mode_cfg["taps"]["top:2"] = {"action": "none"}
+                    migrated = True
+
+                # 2. Check if chord:2 is missing or set to the old default value
+                old_default_targets = {
+                    "Default": "Browser",
+                    "Browser": "Media",
+                    "Media": "Mouse",
+                    "Mouse": "Default"
+                }
+                current_c2 = mode_cfg["buttons"].get("chord:2", {}).get("value")
+                if current_c2 is None or current_c2 == old_default_targets.get(mname):
+                    target_double = mode_cycle_mapping_double[mname]
+                    mode_cfg["buttons"]["chord:2"] = {"action": "mode", "value": target_double}
+                    migrated = True
+
+                # 3. Check if chord:3 is missing
+                current_c3 = mode_cfg["buttons"].get("chord:3", {}).get("value")
+                if current_c3 is None:
+                    target_triple = mode_cycle_mapping_triple[mname]
+                    mode_cfg["buttons"]["chord:3"] = {"action": "mode", "value": target_triple}
                     migrated = True
 
         if migrated and not parsing_error:

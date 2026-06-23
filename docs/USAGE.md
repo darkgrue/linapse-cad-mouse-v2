@@ -33,7 +33,7 @@ Linapse includes three specialized modes that suppress standard 6DoF motion repo
 - **Browser Mode**: Puck pitch (`rx` axis) scrolls web pages, and the physical buttons navigate between browser tabs (`ctrl+pageup`/`ctrl+pagedown`).
 - **Media Mode**: Puck pitch (`rx` axis) controls system volume (inverted: push forward for volume up, pull back for volume down), twist (`rz` axis) scrubs forward/back, and physical buttons trigger previous/next track.
 - **Mouse Mode**: Translate up/down/left/right and rotate up/down/left/right move the host OS mouse cursor in those directions. Physical buttons map to left and right click. Single tap on top maps to left click, and double tap on top maps to right click.
-- **Mode Switching Mechanism**: Double click of both buttons simultaneously (`chord:2`) cycles the device active mode in order: `Default` -> `Browser` -> `Media` -> `Mouse` -> `Default`.
+- **Mode Switching Mechanism**: Double click of both buttons simultaneously (`chord:2`) cycles the device active mode in order: `Default` -> `Mouse` -> `Media` -> `Browser` -> `Default`. Triple click of both buttons simultaneously (`chord:3`) cycles the active mode in reverse: `Default` -> `Browser` -> `Media` -> `Mouse` -> `Default`.
 
 ---
 
@@ -62,7 +62,7 @@ For the physical **Left Button** and **Right Button**, you can configure differe
 | Zone | What triggers it |
 |------|------------------|
 | **Left Button** / **Right Button** | The two physical buttons (supports multi-click tabs). |
-| **Both Buttons** | Chord — press both buttons together. Supports double-clicking both buttons simultaneously (`chord:2`) to cycle active modes. |
+| **Both Buttons** | Chord — press both buttons together. Supports double-clicking (`chord:2`) and triple-clicking (`chord:3`) both buttons simultaneously to cycle active modes. |
 | **Top Tap** | Tap the top of the cap. |
 | **Front / Back / Left / Right Tap** | Tap a side of the cap (gesture detected in firmware). |
 

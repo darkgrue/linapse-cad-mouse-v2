@@ -82,19 +82,23 @@ def _fire_multi_chord(count, actions):
     if actions.get("button_override", False):
         return
     mode_buttons = get_active_mode_config(actions, "buttons")
-    act = None
-    if count == 2:
-        act = mode_buttons.get("chord:2")
-        if not act:
-            # Fallback mode cycle: Default -> Browser -> Media -> Mouse -> Default
-            current_mode = actions.get("current_mode", "Default")
-            mode_cycle = ["Default", "Browser", "Media", "Mouse"]
-            if current_mode in mode_cycle:
-                idx = mode_cycle.index(current_mode)
+    act = mode_buttons.get(f"chord:{count}")
+    if not act:
+        # Fallback/default mode cycles
+        # Double Click: Default -> Mouse -> Media -> Browser -> Default
+        # Tripple Click: the reverse of double (Default -> Browser -> Media -> Mouse -> Default)
+        mode_cycle = ["Default", "Mouse", "Media", "Browser"]
+        current_mode = actions.get("current_mode", "Default")
+        if current_mode in mode_cycle:
+            idx = mode_cycle.index(current_mode)
+            if count == 2:
                 next_mode = mode_cycle[(idx + 1) % len(mode_cycle)]
                 act = {"action": "mode", "value": next_mode}
-    else:
-        act = mode_buttons.get("chord:1") or mode_buttons.get("chord")
+            elif count == 3:
+                next_mode = mode_cycle[(idx - 1) % len(mode_cycle)]
+                act = {"action": "mode", "value": next_mode}
+            elif count == 1:
+                act = mode_buttons.get("chord:1") or mode_buttons.get("chord")
     if act:
         dispatch(act)
 
@@ -127,11 +131,13 @@ def _on_press(btn, actions):
                 state_obj.timer = None
             state_obj.click_count = 0
         
-        # Chord pressed: manage chord multi-click detection if double chord is configured
+        # Chord pressed: manage chord multi-click detection if double/triple chord is active
         mode_buttons = get_active_mode_config(actions, "buttons")
-        has_double_chord = "chord:2" in mode_buttons
+        has_multi_chord = ("chord:2" in mode_buttons or 
+                           "chord:3" in mode_buttons or 
+                           "modes" in actions)
         
-        if has_double_chord:
+        if has_multi_chord:
             if _chord_state.timer:
                 _chord_state.timer.cancel()
                 _chord_state.timer = None
@@ -140,7 +146,7 @@ def _on_press(btn, actions):
                 _chord_state.click_count = 1
             _chord_state.released = False
         else:
-            # No double chord, fire single chord immediately
+            # No multi chord configured/applicable, fire single chord immediately
             _fire_multi_chord(1, actions)
         return
 

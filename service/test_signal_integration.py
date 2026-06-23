@@ -691,7 +691,9 @@ def test_modes_feature_integration(running_service):
     assert "taps" not in migrated_config
     
     default_mode = migrated_config["modes"]["Default"]
-    assert default_mode["buttons"] == {"0": {"action": "key", "value": "a"}}
+    assert default_mode["buttons"]["0"] == {"action": "key", "value": "a"}
+    assert default_mode["buttons"]["chord:2"] == {"action": "mode", "value": "Mouse"}
+    assert default_mode["buttons"]["chord:3"] == {"action": "mode", "value": "Browser"}
     assert default_mode["taps"] == {"top:1": {"action": "mode", "value": "Game"}}
     assert default_mode["led"] == {"effect": "solid", "color": "FFFFFF", "brightness": 128}
 
@@ -944,7 +946,7 @@ def test_mouse_mode_and_double_chord_switch(running_service):
     
     global ydotool_calls
     
-    # Write a clean configuration with the new modes and chord:2 switches
+    # Write a clean configuration with the new modes and chord:2 / chord:3 switches
     import json
     initial_actions = {
         "button_override": False,
@@ -958,7 +960,8 @@ def test_mouse_mode_and_double_chord_switch(running_service):
                     "0": {"action": "mouse_scroll", "direction": "down", "amount": 1},
                     "1": {"action": "mouse_scroll", "direction": "up", "amount": 1},
                     "chord": {"action": "key", "value": "shift+7"},
-                    "chord:2": {"action": "mode", "value": "Browser"}
+                    "chord:2": {"action": "mode", "value": "Mouse"},
+                    "chord:3": {"action": "mode", "value": "Browser"}
                 },
                 "taps": {
                     "top:1": {"action": "mouse_click", "button": "left"},
@@ -970,7 +973,8 @@ def test_mouse_mode_and_double_chord_switch(running_service):
                 "buttons": {
                     "0": {"action": "key", "value": "ctrl+pageup"},
                     "1": {"action": "key", "value": "ctrl+pagedown"},
-                    "chord:2": {"action": "mode", "value": "Media"}
+                    "chord:2": {"action": "mode", "value": "Default"},
+                    "chord:3": {"action": "mode", "value": "Media"}
                 },
                 "taps": {
                     "top:2": {"action": "none"}
@@ -981,7 +985,8 @@ def test_mouse_mode_and_double_chord_switch(running_service):
                 "buttons": {
                     "0": {"action": "key", "value": "prev"},
                     "1": {"action": "key", "value": "next"},
-                    "chord:2": {"action": "mode", "value": "Mouse"}
+                    "chord:2": {"action": "mode", "value": "Browser"},
+                    "chord:3": {"action": "mode", "value": "Mouse"}
                 },
                 "taps": {
                     "top:2": {"action": "none"}
@@ -992,7 +997,8 @@ def test_mouse_mode_and_double_chord_switch(running_service):
                 "buttons": {
                     "0": {"action": "mouse_click", "button": "left"},
                     "1": {"action": "mouse_click", "button": "right"},
-                    "chord:2": {"action": "mode", "value": "Default"}
+                    "chord:2": {"action": "mode", "value": "Media"},
+                    "chord:3": {"action": "mode", "value": "Default"}
                 },
                 "taps": {
                     "top:1": {"action": "mouse_click", "button": "left"},
@@ -1019,7 +1025,7 @@ def test_mouse_mode_and_double_chord_switch(running_service):
     default_mode = actions["modes"]["Default"]
     assert default_mode["taps"]["top:2"] == {"action": "none"}
     
-    # 2. Simulate double chord press to cycle: Default -> Browser
+    # 2. Simulate double chord press to cycle: Default -> Mouse
     ydotool_calls.clear()
     
     # Press chord 1
@@ -1039,7 +1045,31 @@ def test_mouse_mode_and_double_chord_switch(running_service):
     # Wait for double click timer (0.25s) to fire mode switch
     time.sleep(0.3)
     
-    assert linapse_service._actions_ref[0]["current_mode"] == "Browser"
+    assert linapse_service._actions_ref[0]["current_mode"] == "Mouse"
+
+    # Simulate triple chord press to cycle: Mouse -> Default (reverse of double)
+    actions = linapse_service._actions_ref[0]
+    
+    # Press chord 1
+    linapse_service._on_press(0, actions)
+    linapse_service._on_press(1, actions)
+    linapse_service._on_release(0)
+    linapse_service._on_release(1)
+    
+    # Press chord 2 within window
+    linapse_service._on_press(0, actions)
+    linapse_service._on_press(1, actions)
+    linapse_service._on_release(0)
+    linapse_service._on_release(1)
+
+    # Press chord 3 within window
+    linapse_service._on_press(0, actions)
+    linapse_service._on_press(1, actions)
+    linapse_service._on_release(0)
+    linapse_service._on_release(1)
+    
+    time.sleep(0.3)
+    assert linapse_service._actions_ref[0]["current_mode"] == "Default"
     
     # 3. Manually switch to Mouse mode to test its logic
     linapse_service.switch_mode("Mouse")

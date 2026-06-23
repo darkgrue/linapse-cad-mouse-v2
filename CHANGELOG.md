@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.19.1] - 2026-06-22
+
+### Added
+- **Multi-Click Chord Mode Cycling**: Double click (`chord:2`) and triple click (`chord:3`) on both buttons now cycle active modes by default. Double click cycles forward (`Default` -> `Mouse` -> `Media` -> `Browser` -> `Default`), while triple click cycles in reverse.
+
+### Changed
+- **Granular Integration Tests**: Refactored the Playwright integration test suite (`service/test_playwright_benchy.py`) into 38 granular, individual tests for each axis, gesture, and command.
+
 ## [2.19.0] - 2026-06-22
 
 ### Added
