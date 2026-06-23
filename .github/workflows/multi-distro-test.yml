@@ -563,6 +563,8 @@ jobs:
     needs: [release]
     runs-on: ubuntu-latest
     if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name == 'push' && vars.UBUNTU_PPA_PUBLISH_ENABLED == 'true'
+    env:
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -579,17 +581,18 @@ jobs:
 
       - name: Import GPG key
         id: import-gpg
-        if: secrets.GPG_PRIVATE_KEY != ''
+        if: ${{ env.GPG_PRIVATE_KEY != '' }}
         uses: crazy-max/ghaction-import-gpg@v6
         with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_private_key: ${{ env.GPG_PRIVATE_KEY }}
 
       - name: Prepare Debian source package and upload
+        if: ${{ env.GPG_PRIVATE_KEY != '' }}
         env:
           PPA_OWNER: ${{ vars.PPA_OWNER }}
         run: |
-          if [ -z "${{ secrets.GPG_PRIVATE_KEY }}" ] || [ -z "$PPA_OWNER" ]; then
-            echo "Launchpad GPG key or PPA owner secret/var not configured. Skipping PPA release."
+          if [ -z "$PPA_OWNER" ]; then
+            echo "Launchpad PPA owner not configured. Skipping PPA release."
             exit 0
           fi
           
