@@ -2749,7 +2749,6 @@ function connectWS() {
 
   ws.onopen = () => {
     setConnected(true);
-    setStatus('Connected', 'ok');
     sendCmd('config get');
     sendCmd('actions_get');
     sendCmd('version_get');
