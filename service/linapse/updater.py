@@ -28,10 +28,15 @@ def check_for_updates(quiet=False):
         return
     state.software_update_status = "checking"
     state.broadcast_from_thread("SOFTWARE_UPDATE:checking")
+    headers = {"User-Agent": "Linapse-Service"}
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if token:
+        headers["Authorization"] = f"token {token}"
+
     try:
         req = urllib.request.Request(
             "https://api.github.com/repos/spikeon/linapse-cad-mouse-v2/releases/latest",
-            headers={"User-Agent": "Linapse-Service"}
+            headers=headers
         )
         with urllib.request.urlopen(req, timeout=10) as response:
             data = json.loads(response.read().decode())
@@ -67,9 +72,37 @@ def check_for_updates(quiet=False):
                 if not quiet:
                     print("[updater] Service is up to date.")
     except Exception as e:
-        state.software_update_status = "failed"
-        state.broadcast_from_thread(f"SOFTWARE_UPDATE:failed:Check error: {str(e)}")
-        print(f"[updater] Update check failed: {e}")
+        # Fallback to fetching raw VERSION file directly from GitHub (never rate-limited)
+        try:
+            if not quiet:
+                print(f"[updater] Primary check failed ({e}). Trying fallback raw VERSION check...")
+            fallback_req = urllib.request.Request(
+                "https://raw.githubusercontent.com/spikeon/linapse-cad-mouse-v2/main/VERSION",
+                headers={"User-Agent": "Linapse-Service"}
+            )
+            with urllib.request.urlopen(fallback_req, timeout=10) as response:
+                raw_ver = response.read().decode().strip()
+                if not raw_ver:
+                    raise ValueError("Empty version file")
+                
+                tag_name = "v" + raw_ver
+                if compare_versions(tag_name, state.service_version) > 0:
+                    state.latest_software_version = raw_ver
+                    state.software_update_status = "available"
+                    state.software_update_url = f"https://github.com/spikeon/linapse-cad-mouse-v2/releases/tag/{tag_name}"
+                    
+                    state.broadcast_from_thread(f"SOFTWARE_UPDATE:available:{state.latest_software_version}:{state.software_update_url}")
+                    if not quiet:
+                        print(f"[updater] New version available (fallback): {tag_name}")
+                else:
+                    state.software_update_status = "idle"
+                    state.broadcast_from_thread("SOFTWARE_UPDATE:idle")
+                    if not quiet:
+                        print("[updater] Service is up to date (fallback).")
+        except Exception as fallback_err:
+            state.software_update_status = "failed"
+            state.broadcast_from_thread(f"SOFTWARE_UPDATE:failed:Check error: {str(e)}")
+            print(f"[updater] Update check failed: {e} (fallback: {fallback_err})")
 
 def download_and_install_update():
     if state.software_update_status != "available" or not state.software_update_url:

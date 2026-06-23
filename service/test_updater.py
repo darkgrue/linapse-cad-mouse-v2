@@ -58,3 +58,28 @@ class TestUpdater(unittest.TestCase):
         
         self.assertEqual(state.software_update_status, "idle")
         self.assertIsNone(state.latest_software_version)
+
+    @patch("urllib.request.urlopen")
+    @patch("linapse.state.broadcast_from_thread")
+    def test_check_for_updates_rate_limit_fallback(self, mock_broadcast, mock_urlopen):
+        mock_response_fallback = MagicMock()
+        mock_response_fallback.read.return_value = b"2.20.0\n"
+
+        def mock_urlopen_side_effect(req, *args, **kwargs):
+            # req can be Request object
+            url = req.full_url if hasattr(req, "full_url") else str(req)
+            if "api.github.com" in url:
+                raise Exception("HTTP Error 403: rate limit exceeded")
+            elif "raw.githubusercontent.com" in url:
+                mock_enter = MagicMock()
+                mock_enter.__enter__.return_value = mock_response_fallback
+                return mock_enter
+            raise ValueError(f"Unexpected url {url}")
+
+        mock_urlopen.side_effect = mock_urlopen_side_effect
+
+        updater.check_for_updates(quiet=True)
+
+        self.assertEqual(state.latest_software_version, "2.20.0")
+        self.assertEqual(state.software_update_status, "available")
+        self.assertEqual(state.software_update_url, "https://github.com/spikeon/linapse-cad-mouse-v2/releases/tag/v2.20.0")
