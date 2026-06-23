@@ -98,6 +98,9 @@ exit 0
 echo "YDOTOOL: $*" >> {log_path}
 exit 0
 """)
+        self.write_mock_bin("cmp", """#!/bin/bash
+exit 1
+""")
         import sys
         self.write_mock_bin("python3", f"""#!/bin/bash
 if [[ "$1" == "-c" && "$2" == import* ]]; then
