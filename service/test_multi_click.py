@@ -115,22 +115,55 @@ def test_legacy_button_fallback():
     }
     
     linapse_service._actions_ref = [actions]
-    
-    # Since no double-click is configured, it should trigger immediately
+
+    # No double-click configured + holdable key => press holds the key down.
     linapse_service._on_press(0, actions)
-    
-    # Poll up to 5s for the action to fire
+
+    # Poll up to 5s for the key-down to fire
     start_time = time.time()
     while len(ydotool_calls) < 1 and time.time() - start_time < 5.0:
         time.sleep(0.05)
-        
+
     assert len(ydotool_calls) == 1
-    assert ydotool_calls[0] == ["ydotool", "key", "29:1", "44:1", "44:0", "29:0"]
-    
+    assert ydotool_calls[0] == ["ydotool", "key", "29:1", "44:1"]  # ctrl+z down
+
+    # Releasing the button releases the key (reverse order).
     linapse_service._on_release(0, actions)
-    time.sleep(0.5)
-    # Ensure no extra multi-click action is triggered
-    assert len(ydotool_calls) == 1
+    start_time = time.time()
+    while len(ydotool_calls) < 2 and time.time() - start_time < 5.0:
+        time.sleep(0.05)
+    assert len(ydotool_calls) == 2
+    assert ydotool_calls[1] == ["ydotool", "key", "44:0", "29:0"]  # ctrl+z up
+    time.sleep(0.3)
+    assert len(ydotool_calls) == 2  # no extra fire
+
+def test_button_hold_mouse():
+    # A mouse_click button held down should press on button-down, release on up
+    # (so a held button is a drag), not a single click.
+    actions = {
+        "button_override": False,
+        "current_mode": "Mouse",
+        "modes": {
+            "Mouse": {
+                "buttons": {"0": {"action": "mouse_click", "button": "left"}},
+                "taps": {}
+            }
+        }
+    }
+    linapse_service._actions_ref = [actions]
+
+    linapse_service._on_press(0, actions)
+    start_time = time.time()
+    while len(ydotool_calls) < 1 and time.time() - start_time < 5.0:
+        time.sleep(0.05)
+    assert ydotool_calls[0] == ["ydotool", "click", "0x40"]  # left down
+
+    linapse_service._on_release(0, actions)
+    start_time = time.time()
+    while len(ydotool_calls) < 2 and time.time() - start_time < 5.0:
+        time.sleep(0.05)
+    assert ydotool_calls[1] == ["ydotool", "click", "0x80"]  # left up
+
 
 def test_media_action_dispatch():
     # Verify that media actions trigger the correct keycodes

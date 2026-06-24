@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.22.0] - 2026-06-24
+
+### Added
+- **Controller Mode (virtual gamepad).** New built-in mode that turns the puck into an analog game controller: tilt drives the left analog stick and the two physical buttons (plus single/double top taps) map to gamepad buttons A/B. Translation is ignored on the gamepad.
+- **Cross-platform gamepad backend.** `uinput`/`evdev` on Linux and ViGEmBus via `vgamepad` on Windows; degrades to a no-op when unavailable (macOS unsupported). Added to `service/requirements.txt`.
+- **uinput in the installer.** `service/install.sh` installs a `/dev/uinput` udev rule (group `input`, 0660), persists the module via `/etc/modules-load.d`, and loads it — fixing access for both Controller-mode gamepad emulation and `ydotool`.
+- **Button hold-through.** Physical buttons bound to a keypress, mouse click, or gamepad button now press-and-hold for the duration of the hold (click-drag, hold-to-aim), instead of firing a single tap.
+- **Configurator Controller preview.** The Motion tab gains a live, Tron-styled **3D** first-person room and **2D** top-down view, driven straight off the device, with a cheese-collecting playground (cone/circle button attacks) to feel the mapping.
+- **Decoupled, granular Controller settings.** Per-axis sensitivity (look / turn / move / strafe), a controller-only software dead zone, and per-axis inversion (look / turn / forward / strafe) — stored in a dedicated `controller` config block, independent of the global motion filter used by the other modes.
+
+### Changed
+- **Mode cycle.** Controller is spliced into the chord cycle after Mouse: `Default -> Mouse -> Controller -> Media -> Browser`. Default mode LED now ships as red `reactive`; Controller mode uses the rainbow swirl.
+- **3D preview controls.** First-person scheme: forward/back tilt looks up/down (angle holds, no snap-back), twist turns, and pushing the puck moves/strafes.
+
+### Fixed
+- **Taps no longer pause rotation.** Firmware zeroes only the translation axes during a tap (the impulse lives there), so tilt/look output keeps flowing while a tap registers.
+
 ## [2.21.30] - 2026-06-23
 
 ### Fixed

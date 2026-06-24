@@ -100,6 +100,11 @@ def load_actions():
                 "inversion": {
                     "x": False, "y": False, "z": False, "rx": True, "ry": True, "rz": True
                 },
+                "controller": {
+                    "sensitivity": {"look": 1.0, "turn": 1.0, "move": 1.0, "strafe": 1.0},
+                    "deadzone": 0.06,
+                    "invert": {"rx": True, "ry": False, "rz": False, "x": False, "y": False}
+                },
                 "modes": {
                     "Default": {
                         "buttons": {
@@ -119,8 +124,8 @@ def load_actions():
                             "back:1": {"action": "none"}, "back:2": {"action": "none"}
                         },
                         "led": {
-                            "effect": "rainbow_swirl",
-                            "color": "FFFFFF",
+                            "effect": "reactive",
+                            "color": "FF0000",
                             "brightness": 128
                         }
                     },
@@ -168,7 +173,7 @@ def load_actions():
                             "0": {"action": "key", "value": "prev"},
                             "1": {"action": "key", "value": "next"},
                             "chord:2": {"action": "mode", "value": "Browser"},
-                            "chord:3": {"action": "mode", "value": "Mouse"}
+                            "chord:3": {"action": "mode", "value": "Controller"}
                         },
                         "taps": {
                             "top:2": {"action": "none"}
@@ -183,7 +188,7 @@ def load_actions():
                         "buttons": {
                             "0": {"action": "mouse_click", "button": "left"},
                             "1": {"action": "mouse_click", "button": "right"},
-                            "chord:2": {"action": "mode", "value": "Media"},
+                            "chord:2": {"action": "mode", "value": "Controller"},
                             "chord:3": {"action": "mode", "value": "Default"}
                         },
                         "taps": {
@@ -198,6 +203,23 @@ def load_actions():
                         "led": {
                             "effect": "solid",
                             "color": "00FFFF",
+                            "brightness": 128
+                        }
+                    },
+                    "Controller": {
+                        "buttons": {
+                            "0": {"action": "gamepad_button", "button": 0},
+                            "1": {"action": "gamepad_button", "button": 1},
+                            "chord:2": {"action": "mode", "value": "Media"},
+                            "chord:3": {"action": "mode", "value": "Mouse"}
+                        },
+                        "taps": {
+                            "top:1": {"action": "gamepad_button", "button": 0},
+                            "top:2": {"action": "gamepad_button", "button": 1}
+                        },
+                        "led": {
+                            "effect": "rainbow_swirl",
+                            "color": "FFFFFF",
                             "brightness": 128
                         }
                     }
@@ -245,7 +267,7 @@ def load_actions():
                     "0": {"action": "key", "value": "prev"},
                     "1": {"action": "key", "value": "next"},
                     "chord:2": {"action": "mode", "value": "Browser"},
-                    "chord:3": {"action": "mode", "value": "Mouse"}
+                    "chord:3": {"action": "mode", "value": "Controller"}
                 },
                 "taps": {
                     "top:2": {"action": "none"}
@@ -266,7 +288,7 @@ def load_actions():
                 "buttons": {
                     "0": {"action": "mouse_click", "button": "left"},
                     "1": {"action": "mouse_click", "button": "right"},
-                    "chord:2": {"action": "mode", "value": "Media"},
+                    "chord:2": {"action": "mode", "value": "Controller"},
                     "chord:3": {"action": "mode", "value": "Default"}
                 },
                 "taps": {
@@ -277,37 +299,99 @@ def load_actions():
             }
             migrated = True
 
+        if "Controller" not in actions["modes"]:
+            actions["modes"]["Controller"] = {
+                "buttons": {
+                    "0": {"action": "gamepad_button", "button": 0},
+                    "1": {"action": "gamepad_button", "button": 1},
+                    "chord:2": {"action": "mode", "value": "Media"},
+                    "chord:3": {"action": "mode", "value": "Mouse"}
+                },
+                "taps": {
+                    "top:1": {"action": "gamepad_button", "button": 0},
+                    "top:2": {"action": "gamepad_button", "button": 1}
+                },
+                "led": {"effect": "rainbow_swirl", "color": "FFFFFF", "brightness": 128}
+            }
+            migrated = True
+
         if "auto_update_firmware" not in actions:
             actions["auto_update_firmware"] = False
             migrated = True
 
-        # Ensure all existing modes have their double chord (chord:2) and triple chord (chord:3)
+        if "controller" not in actions:
+            actions["controller"] = {
+                "sensitivity": {"look": 1.0, "turn": 1.0, "move": 1.0, "strafe": 1.0},
+                "deadzone": 0.06,
+                "invert": {"rx": True, "ry": False, "rz": False, "x": False, "y": False}
+            }
+            migrated = True
+        elif not isinstance(actions["controller"].get("sensitivity"), dict):
+            # Upgrade the old single sensitivity scalar to per-axis controls.
+            s = actions["controller"].get("sensitivity", 1.0)
+            try:
+                s = float(s)
+            except (TypeError, ValueError):
+                s = 1.0
+            actions["controller"]["sensitivity"] = {"look": s, "turn": s, "move": s, "strafe": s}
+            migrated = True
+
+        # Default mode LED: ship red reactive. Only migrate the old stock rainbow
+        # (rainbow_swirl + FFFFFF); never clobber a user-customized LED.
+        if "Default" in actions["modes"]:
+            default_led = actions["modes"]["Default"].get("led", {})
+            if default_led.get("effect") == "rainbow_swirl" and default_led.get("color") == "FFFFFF":
+                actions["modes"]["Default"]["led"] = {
+                    "effect": "reactive", "color": "FF0000",
+                    "brightness": default_led.get("brightness", 128)
+                }
+                migrated = True
+
+        # Ensure all modes carry the current chord cycle:
+        # double: Default -> Mouse -> Controller -> Media -> Browser -> (Default)
+        # triple: the reverse
         mode_cycle_mapping_double = {
             "Default": "Mouse",
-            "Browser": "Default",
+            "Mouse": "Controller",
+            "Controller": "Media",
             "Media": "Browser",
-            "Mouse": "Media"
+            "Browser": "Default",
         }
         mode_cycle_mapping_triple = {
             "Default": "Browser",
             "Browser": "Media",
-            "Media": "Mouse",
-            "Mouse": "Default"
+            "Media": "Controller",
+            "Controller": "Mouse",
+            "Mouse": "Default",
         }
-        for mname in ["Default", "Browser", "Media", "Mouse"]:
+        # chord values treated as "still a default" (legacy + pre-Controller), safe
+        # to re-point. The != target guard below keeps re-runs idempotent.
+        old_double_defaults = {
+            "Default": {"Browser", "Mouse"},
+            "Browser": {"Media", "Default"},
+            "Media": {"Mouse", "Browser"},
+            "Mouse": {"Default", "Media"},
+            "Controller": {"Default", "Media"},
+        }
+        old_triple_defaults = {
+            "Default": {"Browser"},
+            "Browser": {"Media"},
+            "Media": {"Mouse", "Controller"},
+            "Mouse": {"Default"},
+            "Controller": {"Mouse"},
+        }
+        for mname in ["Default", "Browser", "Media", "Mouse", "Controller"]:
             if mname in actions["modes"]:
                 mode_cfg = actions["modes"][mname]
                 if "buttons" not in mode_cfg:
                     mode_cfg["buttons"] = {}
 
-                # 1. We check if they have the legacy taps top:2 mode switch to migrate from
+                # 1. Migrate the legacy taps top:2 mode switch
                 has_old_switch = False
                 if "taps" in mode_cfg and "top:2" in mode_cfg["taps"]:
                     tap_act = mode_cfg["taps"]["top:2"]
                     if tap_act.get("action") == "mode":
                         has_old_switch = True
-
-                # If they have old top:2 switch, clean it up
                 if has_old_switch:
                     if mname == "Mouse":
                         mode_cfg["taps"]["top:2"] = {"action": "mouse_click", "button": "right"}
@@ -315,23 +399,17 @@ def load_actions():
                         mode_cfg["taps"]["top:2"] = {"action": "none"}
                     migrated = True
 
-                # 2. Check if chord:2 is missing or set to the old default value
-                old_default_targets = {
-                    "Default": "Browser",
-                    "Browser": "Media",
-                    "Media": "Mouse",
-                    "Mouse": "Default"
-                }
+                # 2. Re-point chord:2 (double) if missing or still on a default
+                target_double = mode_cycle_mapping_double[mname]
                 current_c2 = mode_cfg["buttons"].get("chord:2", {}).get("value")
-                if current_c2 is None or current_c2 == old_default_targets.get(mname):
-                    target_double = mode_cycle_mapping_double[mname]
+                if current_c2 != target_double and (current_c2 is None or current_c2 in old_double_defaults[mname]):
                     mode_cfg["buttons"]["chord:2"] = {"action": "mode", "value": target_double}
                     migrated = True
 
-                # 3. Check if chord:3 is missing
+                # 3. Re-point chord:3 (triple) if missing or still on a default
+                target_triple = mode_cycle_mapping_triple[mname]
                 current_c3 = mode_cfg["buttons"].get("chord:3", {}).get("value")
-                if current_c3 is None:
-                    target_triple = mode_cycle_mapping_triple[mname]
+                if current_c3 != target_triple and (current_c3 is None or current_c3 in old_triple_defaults[mname]):
                     mode_cfg["buttons"]["chord:3"] = {"action": "mode", "value": target_triple}
                     migrated = True
 

@@ -536,16 +536,19 @@ def test_button_chord_timing_debouncing(running_service):
     timer = linapse_service._timers[0]
     timer.cancel()
     linapse_service._on_single(0, actions)
-    
+
+    # Holdable key 'a' is now held down (not a one-shot tap).
     assert len(ydotool_calls) == 1
-    assert ydotool_calls[0] == ["ydotool", "key", "30:1", "30:0"]
-    
-    # Press button 1 after boundary
+    assert ydotool_calls[0] == ["ydotool", "key", "30:1"]  # 'a' down
+
+    # Press button 1 after boundary -> chord engages, which first releases the
+    # held 'a', then fires shift+7.
     linapse_service._on_press(1, actions)
     assert linapse_service._chord_fired is True
-    assert len(ydotool_calls) == 2
-    assert ydotool_calls[1] == ["ydotool", "key", "42:1", "8:1", "8:0", "42:0"]
-    
+    assert len(ydotool_calls) == 3
+    assert ydotool_calls[1] == ["ydotool", "key", "30:0"]  # 'a' released by chord
+    assert ydotool_calls[2] == ["ydotool", "key", "42:1", "8:1", "8:0", "42:0"]
+
     linapse_service._on_release(0)
     linapse_service._on_release(1)
     
@@ -718,14 +721,15 @@ def test_modes_feature_integration(running_service):
     global ydotool_calls
     ydotool_calls.clear()
     
-    # Trigger button 0 press in Default mode
+    # Trigger button 0 press in Default mode (holdable key 'a' = 30)
     linapse_service._on_press(0, linapse_service._actions_ref[0])
     timer = linapse_service._timers[0]
     timer.cancel()
     linapse_service._on_single(0, linapse_service._actions_ref[0])
-    
-    assert len(ydotool_calls) == 1
-    assert ydotool_calls[0] == ["ydotool", "key", "30:1", "30:0"]
+
+    assert ydotool_calls == [["ydotool", "key", "30:1"]]  # 'a' down
+    linapse_service._on_release(0)
+    assert ydotool_calls[-1] == ["ydotool", "key", "30:0"]  # 'a' up
     ydotool_calls.clear()
     
     # 2. Mode Switching via tap event
@@ -760,9 +764,10 @@ def test_modes_feature_integration(running_service):
     timer = linapse_service._timers[0]
     timer.cancel()
     linapse_service._on_single(0, linapse_service._actions_ref[0])
-    
-    assert len(ydotool_calls) == 1
-    assert ydotool_calls[0] == ["ydotool", "key", "34:1", "34:0"]
+
+    assert ydotool_calls == [["ydotool", "key", "34:1"]]  # 'g' down
+    linapse_service._on_release(0)
+    assert ydotool_calls[-1] == ["ydotool", "key", "34:0"]  # 'g' up
     ydotool_calls.clear()
     
     # 4. Robustness: switching to a non-existent mode does nothing

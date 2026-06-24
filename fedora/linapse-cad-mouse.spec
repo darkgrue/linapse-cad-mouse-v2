@@ -3,7 +3,7 @@
 %{!?_udevrulesdir: %global _udevrulesdir %{_prefix}/lib/udev/rules.d}
 
 Name:           linapse-cad-mouse
-Version:        2.21.30
+Version:        2.22.0
 Release:        1%{?dist}
 Summary:        CAD Mouse MK2 Linapse driver service and configurator
 
@@ -141,6 +141,9 @@ install -Dm644 service/udev/99-spacemouse.rules %{buildroot}%{_udevrulesdir}/99-
 %{_udevrulesdir}/99-spacemouse.rules
 
 %changelog
+* Wed Jun 24 2026 spikeon <spikeon@example.com> - 2.22.0-1
+- Add Controller mode (virtual gamepad), button hold-through, uinput install rule, and a decoupled 3D/2D Controller preview with per-axis sensitivity/dead zone/inversion
+
 * Tue Jun 23 2026 spikeon <spikeon@example.com> - 2.21.30-1
 - Add -u flag to dput to bypass local GPG verification issues in CI and bump version to 2.21.30
 

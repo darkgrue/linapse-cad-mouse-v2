@@ -1,3 +1,10 @@
+linapse-cad-mouse (2.22.0-1) unstable; urgency=low
+
+  * Add Controller mode (virtual gamepad), button hold-through, uinput install,
+    and a decoupled 3D/2D Controller preview. Release version 2.22.0.
+
+ -- Michael Flynn <spikeon@gmail.com>  Wed, 24 Jun 2026 11:30:00 -0400
+
 linapse-cad-mouse (2.21.30-1) unstable; urgency=low
 
   * Release version 2.21.30.

@@ -163,6 +163,97 @@ def ydotool(*args):
     except Exception as e:
         print(f"[ydotool] spawn error: {e}")
 
+# Actions that can be held down for as long as a physical button is held.
+HOLDABLE_ACTIONS = ("key", "mouse_click", "gamepad_button")
+
+
+def is_holdable(action_obj):
+    return isinstance(action_obj, dict) and action_obj.get("action") in HOLDABLE_ACTIONS
+
+
+def _combo_parts(val):
+    """Friendly key names from either a 'a+b' combo or a raw 'code:1 code:0' string."""
+    if ":" in val:
+        out = []
+        for token in val.split():
+            if ":" in token:
+                code_str, st = token.split(":", 1)
+                if st == "1":
+                    friendly = _REVERSE_KEY_CODES.get(int(code_str))
+                    if friendly:
+                        out.append(friendly)
+        return out
+    return [p.strip() for p in val.lower().split("+") if p.strip()]
+
+
+def _combo_codes(val):
+    """ydotool keycodes (press order) from a combo or raw string."""
+    if ":" in val:
+        return [int(t.split(":", 1)[0]) for t in val.split() if t.endswith(":1")]
+    codes = []
+    for p in _combo_parts(val):
+        code = _KEY_CODES.get(p)
+        if code is not None:
+            codes.append(code)
+    return codes
+
+
+def dispatch_hold(action_obj, pressed):
+    """Press (pressed=True) or release (pressed=False) a holdable action so it
+    stays active while a physical button is held. Falls back to one-shot
+    dispatch for anything not holdable."""
+    if not action_obj:
+        return
+    act = action_obj.get("action")
+    if act == "key":
+        val = action_obj.get("value", "")
+        if not val:
+            return
+        if sys.platform in ("win32", "darwin"):
+            if not pynput_keyboard:
+                return
+            keys = [get_pynput_key(p) for p in _combo_parts(val)]
+            keys = [k for k in keys if k]
+            try:
+                if pressed:
+                    for k in keys:
+                        pynput_keyboard.press(k)
+                else:
+                    for k in reversed(keys):
+                        pynput_keyboard.release(k)
+            except Exception as e:
+                print(f"[pynput] key hold error '{val}': {e}")
+        else:
+            codes = _combo_codes(val)
+            if not codes:
+                return
+            if pressed:
+                ydotool("key", " ".join(f"{c}:1" for c in codes))
+            else:
+                ydotool("key", " ".join(f"{c}:0" for c in reversed(codes)))
+    elif act == "mouse_click":
+        btn = action_obj.get("button", "left")
+        if sys.platform in ("win32", "darwin"):
+            if not pynput_mouse:
+                return
+            b = Button.left if btn == "left" else (Button.right if btn == "right" else Button.middle)
+            try:
+                pynput_mouse.press(b) if pressed else pynput_mouse.release(b)
+            except Exception as e:
+                print(f"[pynput] mouse hold error '{btn}': {e}")
+        else:
+            # ydotool button code: low nibble = button (0/1/2), 0x40=down 0x80=up.
+            idx = _MOUSE_BTN.get(btn, 0xC0) & 0x0F
+            ydotool("click", hex((0x40 if pressed else 0x80) | idx))
+    elif act == "gamepad_button":
+        from . import gamepad
+        idx = int(action_obj.get("button", 0))
+        gamepad.press_button(idx) if pressed else gamepad.release_button(idx)
+    elif pressed:
+        # Not holdable (mode/media/macro/exec): fire once on press.
+        dispatch(action_obj)
+
+
 def dispatch(action_obj):
     if not action_obj:
         return
@@ -238,6 +329,9 @@ def dispatch(action_obj):
                     val = translated
                 if val:
                     ydotool("key", val)
+    elif act == "gamepad_button":
+        from . import gamepad
+        gamepad.pulse_button(int(action_obj.get("button", 0)))
     elif act == "mouse_click":
         if sys.platform in ("win32", "darwin"):
             if pynput_mouse:

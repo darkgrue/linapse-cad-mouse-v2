@@ -6,11 +6,16 @@ import struct
 import sys
 import time
 from . import state
+from . import gamepad
 from .config import get_active_mode_config
 from .emulation import dispatch
 from .hid import _on_press, _on_release
 
 SERIAL_BAUD = 115200
+
+# Firmware clamps every motion axis to this magnitude (Config.h AXIS_LIMIT).
+# Used to normalize tilt into a -1..1 analog stick in Controller mode.
+AXIS_LIMIT = 350.0
 
 DIR_MAP = {
     "NegZ": "top", "NegX": "left", "PosX": "right",
@@ -277,7 +282,7 @@ def serial_thread(actions_ref):
                             ry = ry * sens.get("ry_pos" if ry >= 0 else "ry_neg", 1.0)
                             rz = rz * sens.get("rz_pos" if rz <= 0 else "rz_neg", 1.0)
                             dominant_mode = actions_ref[0].get("dominant_mode", True) if actions_ref[0] else True
-                            if dominant_mode and current_mode not in ("Browser", "Media", "Mouse"):
+                            if dominant_mode and current_mode not in ("Browser", "Media", "Mouse", "Controller"):
                                 bias = actions_ref[0].get("dominant_mode_bias", 4.8) if actions_ref[0] else 4.8
                                 trans_mag = math.sqrt(x*x + y*y + z*z)
                                 rot_mag = math.sqrt(rx*rx + ry*ry + rz*rz) * bias
@@ -291,7 +296,7 @@ def serial_thread(actions_ref):
                                     z = 0.0
 
 
-                            if current_mode not in ("Browser", "Media", "Mouse"):
+                            if current_mode not in ("Browser", "Media", "Mouse", "Controller"):
                                 state.broadcast_from_thread(f"MOTION:{x:.1f},{y:.1f},{z:.1f},{rx:.1f},{ry:.1f},{rz:.1f}")
 
                             if current_mode == "Browser":
@@ -382,11 +387,49 @@ def serial_thread(actions_ref):
                                     dispatch({"action": "mouse_scroll", "direction": "up", "amount": scrolls})
                                     _mouse_scroll_accumulator += scrolls * 150.0
 
+                            elif current_mode == "Controller":
+                                # Controller has its OWN settings (sensitivity / deadzone /
+                                # per-axis invert), decoupled from the global sensitivity +
+                                # inversion that still drive CAD/Mouse modes.
+                                ctrl = actions_ref[0].get("controller", {}) if actions_ref[0] else {}
+                                cdead = ctrl.get("deadzone", 0.06)
+                                cinv = ctrl.get("invert", {})
+                                if not isinstance(cinv, dict):
+                                    cinv = {}
+                                csens = ctrl.get("sensitivity", {})
+                                if not isinstance(csens, dict):
+                                    csens = {}
+                                s_look = csens.get("look", 1.0)      # tilt -> pitch + left stick
+                                s_turn = csens.get("turn", 1.0)      # twist -> yaw
+                                s_move = csens.get("move", 1.0)      # push fwd/back
+                                s_strafe = csens.get("strafe", 1.0)  # push left/right
+
+                                def _csgn(ax, default=False):
+                                    return -1.0 if cinv.get(ax, default) else 1.0
+
+                                raw_rx = raw_coords[3] * _csgn("rx", True)   # look (tilt fwd/back)
+                                raw_ry = raw_coords[4] * _csgn("ry", False)  # left-stick horizontal
+                                raw_tx = raw_coords[0] * _csgn("x", False)   # strafe
+                                raw_ty = raw_coords[1] * _csgn("y", False)   # forward/back
+                                raw_rz = raw_coords[5] * _csgn("rz", False)  # twist (turn)
+
+                                lx, ly = gamepad.tilt_to_stick(raw_rx * s_look, raw_ry * s_look, AXIS_LIMIT, cdead)
+                                gamepad.set_left_stick(lx, ly)
+
+                                def _nd(v):
+                                    n = max(-1.0, min(1.0, v / AXIS_LIMIT))
+                                    return 0.0 if abs(n) < cdead else n
+
+                                # STICK:lx,ly,strafe,forward,twist  (extra axes preview-only)
+                                state.broadcast_from_thread(
+                                    f"STICK:{lx:.3f},{ly:.3f},{_nd(raw_tx * s_strafe):.3f},"
+                                    f"{_nd(raw_ty * s_move):.3f},{_nd(raw_rz * s_turn):.3f}")
+
                             # Send processed coordinates back to the device to emit via USB HID
                             try:
                                 custom_usb = actions_ref[0].get("custom_usb", {}) if actions_ref[0] else {}
                                 if custom_usb.get("enabled", False):
-                                    if current_mode not in ("Browser", "Media", "Mouse"):
+                                    if current_mode not in ("Browser", "Media", "Mouse", "Controller"):
                                         ser.write(f"hid_report {x:.1f},{y:.1f},{z:.1f},{rx:.1f},{ry:.1f},{rz:.1f}\n".encode())
                                     else:
                                         ser.write(b"hid_report 0,0,0,0,0,0\n")
@@ -399,7 +442,7 @@ def serial_thread(actions_ref):
                             except Exception as e:
                                 print(f"[serial] failed to write hid_report back: {e}")
 
-                            if current_mode not in ("Browser", "Media", "Mouse"):
+                            if current_mode not in ("Browser", "Media", "Mouse", "Controller"):
                                 # Apply direction inversions for spacenav mapping
                                 z = -z
                                 y = -y

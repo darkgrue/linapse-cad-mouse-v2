@@ -140,23 +140,23 @@ def test_m3_button_mapping(running_service):
     time.sleep(0.08)
     linapse_service._on_release(0)
     time.sleep(0.02)
-    
-    # Should trigger ctrl+pageup combo (keycodes: ctrl=29, pageup=104)
-    # ydotool_calls should have a "key" action with ["ydotool", "key", "29:1", "104:1", "104:0", "29:0"]
-    assert len(tsi.ydotool_calls) > 0
-    assert any(call == ["ydotool", "key", "29:1", "104:1", "104:0", "29:0"] for call in tsi.ydotool_calls)
-    
+
+    # Holdable key: ctrl+pageup is held on press (29:1 104:1) and released on
+    # button-up (104:0 29:0).
+    assert any(call == ["ydotool", "key", "29:1", "104:1"] for call in tsi.ydotool_calls)
+    assert any(call == ["ydotool", "key", "104:0", "29:0"] for call in tsi.ydotool_calls)
+
     tsi.ydotool_calls.clear()
-    
+
     # Press button 1
     linapse_service._on_press(1, linapse_service._actions_ref[0])
     time.sleep(0.08)
     linapse_service._on_release(1)
     time.sleep(0.02)
-    
-    # Should trigger ctrl+pagedown combo (keycodes: ctrl=29, pagedown=109)
-    assert len(tsi.ydotool_calls) > 0
-    assert any(call == ["ydotool", "key", "29:1", "109:1", "109:0", "29:0"] for call in tsi.ydotool_calls)
+
+    # ctrl+pagedown held then released (keycodes: ctrl=29, pagedown=109)
+    assert any(call == ["ydotool", "key", "29:1", "109:1"] for call in tsi.ydotool_calls)
+    assert any(call == ["ydotool", "key", "109:0", "29:0"] for call in tsi.ydotool_calls)
 
     # --- MEDIA MODE ---
     linapse_service.switch_mode("Media")
@@ -170,21 +170,21 @@ def test_m3_button_mapping(running_service):
     linapse_service._on_release(0)
     time.sleep(0.02)
     
-    # Should trigger prev combo (keycode: prev=165)
-    assert len(tsi.ydotool_calls) > 0
-    assert any(call == ["ydotool", "key", "165:1", "165:0"] for call in tsi.ydotool_calls)
-    
+    # prev held then released (keycode: prev=165)
+    assert any(call == ["ydotool", "key", "165:1"] for call in tsi.ydotool_calls)
+    assert any(call == ["ydotool", "key", "165:0"] for call in tsi.ydotool_calls)
+
     tsi.ydotool_calls.clear()
-    
+
     # Press button 1
     linapse_service._on_press(1, linapse_service._actions_ref[0])
     time.sleep(0.08)
     linapse_service._on_release(1)
     time.sleep(0.02)
-    
-    # Should trigger next combo (keycode: next=163)
-    assert len(tsi.ydotool_calls) > 0
-    assert any(call == ["ydotool", "key", "163:1", "163:0"] for call in tsi.ydotool_calls)
+
+    # next held then released (keycode: next=163)
+    assert any(call == ["ydotool", "key", "163:1"] for call in tsi.ydotool_calls)
+    assert any(call == ["ydotool", "key", "163:0"] for call in tsi.ydotool_calls)
 
 def test_m3_accumulator_stress_boundaries(running_service):
     """

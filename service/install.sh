@@ -67,7 +67,7 @@ fi
 section "Installing linapse-service"
 
 pip3 install --break-system-packages -r "$SCRIPT_DIR/requirements.txt" 2>/dev/null || \
-    pip3 install --break-system-packages websockets fastapi "uvicorn[standard]" numpy scipy 2>/dev/null || true
+    pip3 install --break-system-packages websockets fastapi "uvicorn[standard]" numpy scipy evdev 2>/dev/null || true
 python3 -c "import websockets, fastapi, uvicorn, numpy, scipy" || err "Python browser-bridge dependencies install failed"
 
 mkdir -p "$USER_BIN"
@@ -140,6 +140,23 @@ if [ -f "$SCRIPT_DIR/udev/99-spacemouse.rules" ]; then
     fi
 else
     err "udev rules file not found"
+fi
+
+# uinput: ydotool and Controller-mode gamepad emulation both open /dev/uinput.
+# Make it group-writable by 'input' and ensure the module loads at boot.
+if [ -f "$SCRIPT_DIR/udev/99-uinput.rules" ]; then
+    if [ -f /etc/udev/rules.d/99-uinput.rules ] && cmp -s "$SCRIPT_DIR/udev/99-uinput.rules" /etc/udev/rules.d/99-uinput.rules; then
+        info "uinput udev rule already up to date."
+    else
+        sudo cp "$SCRIPT_DIR/udev/99-uinput.rules" /etc/udev/rules.d/99-uinput.rules
+        info "Installed uinput udev rule"
+        sudo udevadm control --reload-rules 2>/dev/null || info "Warning: Could not reload udev rules"
+    fi
+    echo "uinput" | sudo tee /etc/modules-load.d/uinput.conf >/dev/null
+    sudo modprobe uinput 2>/dev/null || info "Warning: could not load uinput now (loads on next boot)"
+    sudo udevadm trigger --subsystem-match=misc --action=add 2>/dev/null || true
+else
+    info "Warning: uinput udev rule not found; Controller mode / ydotool may lack /dev/uinput access"
 fi
 
 

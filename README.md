@@ -23,7 +23,7 @@
 
 ## Features
 
-- **Profiles & Configurable Modes** (Default, Browser, Media, Mouse, and custom modes)
+- **Profiles & Configurable Modes** (Default, Browser, Media, Mouse, Controller, and custom modes)
 - Tap Gestures
 - On-The-Fly Configuration Changes
 - Web GUI
@@ -42,7 +42,9 @@
 
 - **6DoF motion in OnShape, SketchUp Web, and Native apps.** Motion coordinates are decoded in firmware and sent via USB serial to `linapse-service`. On Linux, the service processes the motion and exposes it through a user-space UNIX socket, eliminating the need for system-wide `spacenavd`, allowing native apps (Blender, FreeCAD, OrcaSlicer, etc.) to connect directly. On Windows and macOS, the service translates 6DoF motion and injects it as standard OS mouse/keyboard inputs via the `pynput` library. On all platforms, a WebSocket bridge plus the official Linapse Browser Connector extension carry motion into browser apps (OnShape, SketchUp Web).
 - **Physical buttons, taps, and gestures.** The host service maps physical button clicks (including single click, double click, and multi-click actions), button chords, and cap-tap gestures to keystrokes, mouse events, custom shell commands, macros, or profile/mode switches.
-- **Configurable modes & input suppression.** In specialized modes like **Browser**, **Media**, and **Mouse**, standard 6DoF translation/rotation reports are suppressed. Browser Mode maps the puck's pitch rotation to web page scrolling and physical buttons to browser tab navigation. Media Mode maps puck pitch to system volume control, puck twist to scrubbing, and buttons to track navigation. Mouse Mode maps translation and rotation directly to OS mouse cursor movements, buttons to left/right clicks, and top tap to left/right clicks.
+- **Configurable modes & input suppression.** In specialized modes like **Browser**, **Media**, **Mouse**, and **Controller**, standard 6DoF translation/rotation reports are suppressed. Browser Mode maps the puck's pitch rotation to web page scrolling and physical buttons to browser tab navigation. Media Mode maps puck pitch to system volume control, puck twist to scrubbing, and buttons to track navigation. Mouse Mode maps translation and rotation directly to OS mouse cursor movements, buttons to left/right clicks, and top tap to left/right clicks.
+- **Controller Mode (virtual gamepad).** Turns the puck into an analog game controller: tilt drives the left analog stick and the two buttons (and top taps) map to gamepad buttons A/B. Backed by a cross-platform virtual-gamepad layer (`uinput`/`evdev` on Linux, ViGEmBus via `vgamepad` on Windows). The configurator's Motion tab gains a live **3D / 2D** preview to feel and tune the controls, with its own decoupled, per-axis sensitivity, dead zone, and inversion settings.
+- **Button hold-through.** Physical buttons bound to a keypress, mouse click, or gamepad button now press-and-hold for as long as the button is held (e.g. click-drag, hold-to-aim), not just a one-shot tap.
 - **Addressable RGB lighting.** SK6812 LEDs with multiple effects (solid, breathing, motion-reactive, swirls) configured live per-mode.
 - **Linapse Electron configurator.** An Electron UI to manage modes, remap buttons/taps, design lighting, and tune the motion filter — with a live 3D Benchy viewport you can push around with the puck to feel sensitivity changes in real time.
 
@@ -69,6 +71,12 @@ Drive the SK6812 ring — solid, breathing, motion-reactive, swirl, gradient, ra
 ![Motion Tab](docs/images/configurator-sensitivity.gif)
 
 Tune dead zones, the Kalman filter, the response curve, and **Spherical Mode** (isotropic vector-based processing) against a live 3D Benchy you push with the puck. Also includes an **Interactive Motion Calibration Wizard** to guide you through deflecting the puck to comfort limits, automatically calculating and setting optimal directional sensitivities (up to 20.0).
+
+### Controller Mode preview
+![Controller Mode — 3D preview](docs/images/configurator-controller-3d.png)
+![Controller Mode — 2D preview](docs/images/configurator-controller-2d.png)
+
+When **Controller** is the active mode, the Motion tab swaps the Benchy viewport for a live gamepad playground — a **3D** first-person room and a **2D** top-down view — driven straight off the puck so you can feel the mapping. Tilt to look/move, twist to turn, and press the buttons (A/B) to fire attacks. Tune **per-axis sensitivity** (look, turn, move, strafe), the **dead zone**, and **inversion** for each axis here; these settings are decoupled from the global motion filter used by the other modes.
 
 ### Firmware Tab
 ![Firmware Tab](docs/images/configurator-firmware.png)

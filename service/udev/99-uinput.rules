@@ -1,0 +1,4 @@
+# CAD Mouse MK2 — let the 'input' group create virtual input devices via
+# /dev/uinput. Needed by ydotool (key/mouse emulation) and Controller-mode
+# gamepad emulation, both of which run as the user's systemd service.
+KERNEL=="uinput", SUBSYSTEM=="misc", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"

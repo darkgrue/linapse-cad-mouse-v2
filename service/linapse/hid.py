@@ -6,7 +6,7 @@ import select
 import threading
 from . import state
 from .config import get_active_mode_config
-from .emulation import dispatch
+from .emulation import dispatch, dispatch_hold, is_holdable
 
 BUTTON_REPORT_ID = 3
 CHORD_WINDOW = 0.05
@@ -21,6 +21,7 @@ class ButtonClickState:
 
 _click_states = {0: ButtonClickState(0), 1: ButtonClickState(1)}
 _held = set()
+_active_holds = {}  # btn -> action obj currently pressed-and-held
 _chord_fired = False
 _timers = {}
 _scroll_threads = {}
@@ -33,6 +34,13 @@ class ChordClickState:
 
 _chord_state = ChordClickState()
 _chord_held = False
+
+def _release_all_holds():
+    for b in list(_active_holds.keys()):
+        act = _active_holds.pop(b, None)
+        if act is not None:
+            dispatch_hold(act, False)
+
 
 def reset_click_states():
     global _chord_held
@@ -74,6 +82,14 @@ def _on_single(btn, actions):
         t = threading.Thread(target=_scroll_loop, args=(btn, stop_event, actions), daemon=True)
         _scroll_threads[btn] = (t, stop_event)
         t.start()
+    elif is_holdable(act):
+        # Hold the key/mouse/gamepad button down until the physical button is released.
+        _active_holds[btn] = act
+        dispatch_hold(act, True)
+        if btn not in _held:
+            # Released during the chord window — don't leave it stuck.
+            _active_holds.pop(btn, None)
+            dispatch_hold(act, False)
     else:
         dispatch(act)
 
@@ -85,9 +101,9 @@ def _fire_multi_chord(count, actions):
     act = mode_buttons.get(f"chord:{count}")
     if not act:
         # Fallback/default mode cycles
-        # Double Click: Default -> Mouse -> Media -> Browser -> Default
-        # Tripple Click: the reverse of double (Default -> Browser -> Media -> Mouse -> Default)
-        mode_cycle = ["Default", "Mouse", "Media", "Browser"]
+        # Double Click: Default -> Mouse -> Controller -> Media -> Browser -> Default
+        # Tripple Click: the reverse of double
+        mode_cycle = ["Default", "Mouse", "Controller", "Media", "Browser"]
         current_mode = actions.get("current_mode", "Default")
         if current_mode in mode_cycle:
             idx = mode_cycle.index(current_mode)
@@ -122,6 +138,8 @@ def _on_press(btn, actions):
     if len(_held) == 2:
         _chord_fired = True
         _chord_held = True
+        # Second button engaged a chord — end any single-button hold first.
+        _release_all_holds()
         for t in _timers.values():
             t.cancel()
         _timers.clear()
@@ -178,6 +196,10 @@ def _on_release(btn, actions=None):
     if btn in _scroll_threads:
         _, stop_event = _scroll_threads.pop(btn)
         stop_event.set()
+
+    held_act = _active_holds.pop(btn, None)
+    if held_act is not None:
+        dispatch_hold(held_act, False)
 
     if actions is None:
         actions = state.actions_ref[0] or {}

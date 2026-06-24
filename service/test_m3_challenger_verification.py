@@ -242,21 +242,21 @@ def test_challenger_button_mapping(running_service):
     linapse_service._on_release(0)
     time.sleep(0.02)
     
-    # ctrl = 29, pageup = 104
-    assert len(tsi.ydotool_calls) > 0
-    assert any(call == ["ydotool", "key", "29:1", "104:1", "104:0", "29:0"] for call in tsi.ydotool_calls)
-    
+    # Holdable key: ctrl+pageup held on press (29:1 104:1), released on up (104:0 29:0)
+    assert any(call == ["ydotool", "key", "29:1", "104:1"] for call in tsi.ydotool_calls)
+    assert any(call == ["ydotool", "key", "104:0", "29:0"] for call in tsi.ydotool_calls)
+
     tsi.ydotool_calls.clear()
-    
+
     # Press button 1 (should map to ctrl+pagedown)
     linapse_service._on_press(1, linapse_service._actions_ref[0])
     time.sleep(0.08)
     linapse_service._on_release(1)
     time.sleep(0.02)
-    
-    # ctrl = 29, pagedown = 109
-    assert len(tsi.ydotool_calls) > 0
-    assert any(call == ["ydotool", "key", "29:1", "109:1", "109:0", "29:0"] for call in tsi.ydotool_calls)
+
+    # ctrl = 29, pagedown = 109 (held then released)
+    assert any(call == ["ydotool", "key", "29:1", "109:1"] for call in tsi.ydotool_calls)
+    assert any(call == ["ydotool", "key", "109:0", "29:0"] for call in tsi.ydotool_calls)
 
     # 2. Media Mode Button Mapping
     linapse_service.switch_mode("Media")
@@ -270,18 +270,18 @@ def test_challenger_button_mapping(running_service):
     linapse_service._on_release(0)
     time.sleep(0.02)
     
-    # prev = 165
-    assert len(tsi.ydotool_calls) > 0
-    assert any(call == ["ydotool", "key", "165:1", "165:0"] for call in tsi.ydotool_calls)
-    
+    # prev = 165 (held then released)
+    assert any(call == ["ydotool", "key", "165:1"] for call in tsi.ydotool_calls)
+    assert any(call == ["ydotool", "key", "165:0"] for call in tsi.ydotool_calls)
+
     tsi.ydotool_calls.clear()
-    
+
     # Press button 1 (should map to next)
     linapse_service._on_press(1, linapse_service._actions_ref[0])
     time.sleep(0.08)
     linapse_service._on_release(1)
     time.sleep(0.02)
-    
-    # next = 163
-    assert len(tsi.ydotool_calls) > 0
-    assert any(call == ["ydotool", "key", "163:1", "163:0"] for call in tsi.ydotool_calls)
+
+    # next = 163 (held then released)
+    assert any(call == ["ydotool", "key", "163:1"] for call in tsi.ydotool_calls)
+    assert any(call == ["ydotool", "key", "163:0"] for call in tsi.ydotool_calls)

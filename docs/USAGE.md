@@ -29,11 +29,37 @@ The configurator supports a **Modes** system, letting you define multiple distin
 - **Active Mode**: The selected mode is immediately applied to the device. You can configure buttons or tap gestures to switch modes on-the-fly.
 
 ### Pre-Configured Overrides
-Linapse includes three specialized modes that suppress standard 6DoF motion reports:
+Linapse includes four specialized modes that suppress standard 6DoF motion reports:
 - **Browser Mode**: Puck pitch (`rx` axis) scrolls web pages, and the physical buttons navigate between browser tabs (`ctrl+pageup`/`ctrl+pagedown`).
 - **Media Mode**: Puck pitch (`rx` axis) controls system volume (inverted: push forward for volume up, pull back for volume down), twist (`rz` axis) scrubs forward/back, and physical buttons trigger previous/next track.
 - **Mouse Mode**: Translate up/down/left/right and rotate up/down/left/right move the host OS mouse cursor in those directions. Physical buttons map to left and right click. Single tap on top maps to left click, and double tap on top maps to right click.
-- **Mode Switching Mechanism**: Double click of both buttons simultaneously (`chord:2`) cycles the device active mode in order: `Default` -> `Mouse` -> `Media` -> `Browser` -> `Default`. Triple click of both buttons simultaneously (`chord:3`) cycles the active mode in reverse: `Default` -> `Browser` -> `Media` -> `Mouse` -> `Default`.
+- **Controller Mode**: Turns the puck into a virtual gamepad. Tilt drives the **left analog stick** (rotation only — translation is ignored), and the two physical buttons (plus single/double top taps) map to gamepad buttons **A / B**. Requires a virtual-gamepad backend: `uinput`/`evdev` on Linux (the installer adds the udev rule + loads the module) or ViGEmBus via `vgamepad` on Windows; macOS is unsupported. See [Controller Mode](#controller-mode--gamepad-emulation) below.
+- **Mode Switching Mechanism**: Double click of both buttons simultaneously (`chord:2`) cycles the device active mode in order: `Default` -> `Mouse` -> `Controller` -> `Media` -> `Browser` -> `Default`. Triple click of both buttons simultaneously (`chord:3`) cycles the active mode in reverse.
+
+---
+
+## Controller Mode — gamepad emulation
+
+![Controller Mode — 3D preview](images/configurator-controller-3d.png)
+![Controller Mode — 2D preview](images/configurator-controller-2d.png)
+
+Selecting the **Controller** mode turns the puck into an analog game controller and replaces the Benchy viewport on the **Motion** tab with a live gamepad playground. Switch views with the **3D / 2D** tabs in the top-left of the viewport:
+
+- **3D** — a first-person room. Tilt forward/back to **look** up/down, **twist** to **turn** left/right, and **push** the puck to **move** forward/back and strafe. Look angle holds when you re-center the puck.
+- **2D** — a top-down view. The mouse sprite stays centered while the textured world scrolls; an arrow at a fixed radius shows the facing direction. Tilt sets the direction and the speed.
+
+Both previews are driven live by the device, so what you see mirrors what a game receives. Press the buttons to attack — **A / button 1** fires a cone, **B / button 2** a circle — and clear the cheese scattered around the map.
+
+**Gamepad mapping (what other apps receive):** tilt → left analog stick; the two buttons and top taps → gamepad buttons A / B. Translation is *not* sent to the gamepad — it only drives the previews' movement.
+
+### Controller settings (decoupled)
+The Controller keeps its own settings, independent of the global motion filter the other modes use:
+
+- **Sensitivity** — per-axis: **Look (tilt)**, **Turn (twist)**, **Move (fwd/back)**, and **Strafe**.
+- **Dead Zone** — a center dead zone applied to the stick (controller-only).
+- **Invert** — per-axis toggles for **Look**, **Turn**, **Forward**, and **Strafe**.
+
+> Spherical processing is enabled automatically in Controller mode for smooth diagonals. Spherical processing and the firmware dead zones are a single device-global firmware setting, shared with the other modes.
 
 ---
 
