@@ -1,3 +1,11 @@
+linapse-cad-mouse (2.24.1-1) unstable; urgency=low
+
+  * Move the Button Override (raw HID) toggle to the Device tab and grey out
+    the Left/Right/Chord button controls (with an explanatory tooltip) while it
+    is enabled.
+
+ -- Michael Flynn <spikeon@gmail.com>  Wed, 25 Jun 2026 03:00:00 -0400
+
 linapse-cad-mouse (2.24.0-1) unstable; urgency=low
 
   * Add sleep mode: firmware enters sleep state after configurable idle

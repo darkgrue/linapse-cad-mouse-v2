@@ -36,6 +36,8 @@ Linapse includes four specialized modes that suppress standard 6DoF motion repor
 - **Controller Mode**: Turns the puck into a virtual gamepad. Tilt drives the **left analog stick** (rotation only — translation is ignored), and the two physical buttons (plus single/double top taps) map to gamepad buttons **A / B**. Requires a virtual-gamepad backend: `uinput`/`evdev` on Linux (the installer adds the udev rule + loads the module) or ViGEmBus via `vgamepad` on Windows; macOS is unsupported. See [Controller Mode](#controller-mode--gamepad-emulation) below.
 - **Mode Switching Mechanism**: Double click of both buttons simultaneously (`chord:2`) cycles the device active mode in order: `Default` -> `Mouse` -> `Controller` -> `Media` -> `Browser` -> `Default`. Triple click of both buttons simultaneously (`chord:3`) cycles the active mode in reverse.
 
+> **Heads-up — "Button Override (raw HID)" disables the mode-switch chord.** The chord is a button gesture, so it only fires while the service is handling the physical buttons. Enabling **Button Override (raw HID)** (on the **Device** tab) makes both physical buttons *and* the chord pass straight through as native USB HID; the service stops mapping them, so `chord:2`/`chord:3` no longer cycle modes. If you want raw-HID buttons **and** mode switching, bind a **Mode** action to a different input instead — a **tap** gesture (Top/Front/Back/Left/Right tap), which is not affected by the override.
+
 ---
 
 ## Controller Mode — gamepad emulation

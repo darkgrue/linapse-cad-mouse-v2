@@ -43,10 +43,18 @@ A release is NOT finished when you push — it is finished when the deploy succe
 
 1. **Bump the version** — see **Versioning System**.
 2. **Update the changelog** — see **Changelog Updates**.
-3. **Commit and push.**
-4. **Monitor the deploy to completion.** Watch the CI/CD run for the pushed commit (e.g. `env -u GITHUB_TOKEN -u GH_TOKEN gh run watch`, or poll with `gh run view`) all the way through — including the `release` job that publishes the GitHub release/tag and the PPA upload. A green build/test job is NOT enough; the release must actually publish.
-5. **On failure: fix and loop, under the SAME version number.** Diagnose the failure, apply the fix, and record it in `CHANGELOG.md` under the **same** version's section (a `Fixed` entry). Do NOT increment the version to fix a release that has not published yet (see **Versioning System**). Commit, push, and return to step 4. Repeat until the deploy succeeds.
-6. **Announce only after the release has published.** Once — and only once — the deploy succeeds, post the Discord announcement (below). A failed or in-flight deploy is NOT a release; never announce one.
+3. **Update the local install and smoke-test on real hardware — BEFORE pushing.** Deploy the new build to your own machine and confirm it runs on the actual device before shipping it to the world:
+   ```bash
+   command cp -f  service/linapse-service   ~/.local/bin/linapse-service
+   command cp -rf service/linapse/.         ~/.local/bin/linapse/
+   command cp -f  service/linapse-ws-proxy  ~/.local/bin/linapse-ws-proxy
+   systemctl --user restart linapse-service
+   ```
+   Use `command cp` (or `\cp`) to bypass any `cp -i` alias — under a non-interactive shell it declines every overwrite and silently leaves the install stale. Bumping the service version makes the firmware mismatch, so the service auto-flashes the device (BOOTSEL reset → mount → flash → re-enumerate). Verify with `journalctl --user -u linapse-service` that it ends in `[serial] connected` and `Service is up to date`, that the reported `service_version` matches, and that it flashed once (no loop). If it fails on hardware, fix it before pushing — never ship a version that doesn't run locally. (Full reinstall incl. systemd/udev: `service/install.sh`.)
+4. **Commit and push.**
+5. **Monitor the deploy to completion.** Watch the CI/CD run for the pushed commit (e.g. `env -u GITHUB_TOKEN -u GH_TOKEN gh run watch`, or poll with `gh run view`) all the way through — including the `release` job that publishes the GitHub release/tag and the PPA upload. A green build/test job is NOT enough; the release must actually publish.
+6. **On failure: fix and loop, under the SAME version number.** Diagnose the failure, apply the fix, and record it in `CHANGELOG.md` under the **same** version's section (a `Fixed` entry). Do NOT increment the version to fix a release that has not published yet (see **Versioning System**). Commit, push, and return to step 5. Repeat until the deploy succeeds.
+7. **Announce only after the release has published.** Once — and only once — the deploy succeeds, post the Discord announcement (below). A failed or in-flight deploy is NOT a release; never announce one.
 
 ### Discord announcement
 
