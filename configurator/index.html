@@ -996,6 +996,10 @@ input[type=range]::-webkit-slider-thumb {
     Firmware
     <span id="fwBadge" style="display: none; width: 8px; height: 8px; background-color: #ff4a4a; border-radius: 50%;"></span>
   </div>
+  <button id="megaWizardBtn" onclick="openMegaWizard()" title="Calibration Wizard" style="margin-left:auto;align-self:center;display:flex;align-items:center;gap:8px;background:#e23636;color:#000;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-size:13px">
+    <svg viewBox="0 0 512 512" width="16" height="16" fill="#000" aria-hidden="true"><path d="M64 400l85.7-208.2c17-41.3 47.8-75.3 87.2-96.3L383.8 17.2c12.3-6.6 26.5 4.7 23 18.2L369.6 177.8c-1.1 4.1-1.6 8.3-1.6 12.6 0 6.3 1.2 12.6 3.6 18.5l76.4 191.1-207.1 0 11.8-35.4 40.4-13.5c6.5-2.2 10.9-8.3 10.9-15.2s-4.4-13-10.9-15.2l-40.4-13.5-13.5-40.4C237 260.4 230.9 256 224 256s-13 4.4-15.2 10.9l-13.5 40.4-40.4 13.5C148.4 323 144 329.1 144 336s4.4 13 10.9 15.2l40.4 13.5 11.8 35.4-143.1 0zM279.6 141.5c-1.1-3.3-4.1-5.5-7.6-5.5s-6.5 2.2-7.6 5.5l-6.7 20.2-20.2 6.7c-3.3 1.1-5.5 4.1-5.5 7.6s2.2 6.5 5.5 7.6l20.2 6.7 6.7 20.2c1.1 3.3 4.1 5.5 7.6 5.5s6.5-2.2 7.6-5.5l6.7-20.2 20.2-6.7c3.3-1.1 5.5-4.1 5.5-7.6s-2.2-6.5-5.5-7.6l-20.2-6.7-6.7-20.2zM32 448l448 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 512c-17.7 0-32-14.3-32-32s14.3-32 32-32z"/></svg>
+    Wizard
+  </button>
 </div>
 
 <!-- Mode Selector Bar -->
@@ -1168,7 +1172,8 @@ input[type=range]::-webkit-slider-thumb {
             <div class="wizard-step-indicator" id="wizardStepIndicator">Step 0/13</div>
           </div>
           <div class="wizard-body">
-            <div class="wizard-instruction" id="wizardInstruction">Welcome to Sensitivity Calibration.</div>
+            <canvas id="wizardCanvas" width="460" height="150" style="width:100%;height:150px;background:#0d0d0d;border:1px solid var(--border);border-radius:4px;display:none;margin-bottom:10px"></canvas>
+            <div class="wizard-instruction" id="wizardInstruction">Welcome to Calibration.</div>
             <div id="wizardDetails">This guide will help you set comfortable sensitivities for your puck.</div>
             <div class="wizard-live-value" id="wizardLiveValue" style="display: none;">0.0</div>
             <div class="wizard-progress-bar-container" id="wizardProgressBarContainer" style="display: none; margin-top: 12px;">
@@ -1180,25 +1185,6 @@ input[type=range]::-webkit-slider-thumb {
             <button class="wizard-btn wizard-btn-secondary" id="wizardResetBtn" onclick="resetWizardStep()" style="display: none;">Reset Step</button>
             <button class="wizard-btn wizard-btn-primary" id="wizardNextBtn" onclick="nextCalibrationWizardStep()">Start</button>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- De-spike auto-calibration -->
-    <div id="despikeCalOverlay" class="wizard-overlay" style="display:none">
-      <div class="wizard-card">
-        <div class="wizard-header">
-          <div class="wizard-title">De-spike Calibration</div>
-          <div class="wizard-step-indicator" id="despikeCalStep">0/3</div>
-        </div>
-        <div class="wizard-body">
-          <canvas id="despikeCalCanvas" width="460" height="180" style="width:100%;height:180px;background:#0d0d0d;border:1px solid var(--border);border-radius:4px;display:block"></canvas>
-          <div class="wizard-instruction" id="despikeCalInstruction" style="margin-top:10px">Auto-tune the tap de-spike filter.</div>
-          <div id="despikeCalDetails" style="font-size:12px;color:var(--text3);margin-top:6px;line-height:1.4">Hold still and tap, then move without tapping. The wizard sets the threshold between your motion and your tap spikes. Watch the dot — taps make it jump.</div>
-        </div>
-        <div class="wizard-footer">
-          <button class="wizard-btn wizard-btn-secondary" onclick="despikeCalCancel()">Cancel</button>
-          <button class="wizard-btn wizard-btn-primary" id="despikeCalNext" onclick="despikeCalNext()">Start</button>
         </div>
       </div>
     </div>
@@ -1348,7 +1334,7 @@ input[type=range]::-webkit-slider-thumb {
         <!-- AXES TAB SECTION -->
         <div id="sens-section-axes" class="sens-section" style="display:none">
           <div style="margin-bottom: 12px;">
-            <button class="btn-apply" style="margin: 0; width: 100%; height: 36px;" onclick="startCalibrationWizard()">Run Calibration Wizard</button>
+            <div style="font-size:11px;color:var(--text3);line-height:1.4">Use the <strong style="color:#e23636">Wizard</strong> button (top-right) to auto-calibrate de-spike, sensitivity, and inversion together.</div>
           </div>
           <div class="field-group">
             <div class="field-label" style="color:var(--green);letter-spacing:2px;font-size:10px;font-family:'Barlow Condensed',sans-serif">DIRECTIONAL SENSITIVITY (TRANSLATION)</div>
@@ -1564,7 +1550,6 @@ input[type=range]::-webkit-slider-thumb {
               </div>
               <input type="range" id="despikeStrength" min="0" max="100" step="1" value="100" oninput="onDespikeStrength(this.value)">
             </div>
-            <button class="btn-apply" onclick="openCalibrateWizard()" style="margin-top:12px">Calibrate…</button>
           </div>
         </div>
         <!-- INVERT TAB SECTION -->
@@ -3180,9 +3165,6 @@ function connectWS() {
         if (typeof wizardRecording !== 'undefined' && wizardRecording) {
           handleWizardMotion(vals);
         }
-        if (typeof despikeCalRecording !== 'undefined' && despikeCalRecording) {
-          handleDespikeCalMotion(vals);
-        }
       }
       return;
     }
@@ -4270,136 +4252,6 @@ function onDespikeEnabled(el) {
   sendCmd(`sens set despike_enabled ${on ? 1 : 0}`);
 }
 
-// ── De-spike auto-calibration (Tap-tab "Calibrate…") ─────────────────────────
-// Measures your tap-spike magnitude vs your normal-motion magnitude (de-spike
-// temporarily off), then sets the threshold between them. The 2D dot shows the
-// live motion so you can see the jitter being calibrated. Sensitivity has its
-// own wizard ("Run Calibration Wizard"); this one targets the de-spike filter.
-let despikeCalPhase = 0;
-let despikeCalRecording = false;
-let despikeCal = { tapPeak: 0, movePeak: 0, result: 0 };
-let despikeCalPrev = null;
-let despikeCalSnapshot = null;
-let despikeCalDot = { x: 0, y: 0 };
-let despikeCalRaf = null;
-
-function openCalibrateWizard() {
-  despikeCalSnapshot = {
-    enabled: document.getElementById('despikeEnabled').classList.contains('on'),
-    threshold: parseFloat(document.getElementById('despikeThreshold').value),
-    strength: parseFloat(document.getElementById('despikeStrength').value),
-  };
-  despikeCal = { tapPeak: 0, movePeak: 0, result: 0 };
-  despikeCalPrev = null;
-  sendCmd('sens set despike_enabled 0');   // measure the raw signal
-  document.getElementById('despikeCalOverlay').style.display = 'flex';
-  despikeCalStartDraw();
-  despikeCalSetPhase(0);
-}
-
-function despikeCalSetPhase(p) {
-  despikeCalPhase = p;
-  despikeCalRecording = false;
-  const t = document.getElementById('despikeCalInstruction');
-  const d = document.getElementById('despikeCalDetails');
-  const n = document.getElementById('despikeCalNext');
-  document.getElementById('despikeCalStep').textContent = p + '/3';
-  if (p === 0) {
-    t.textContent = 'Auto-tune the tap de-spike filter.';
-    d.textContent = "Hold still and tap, then move without tapping. Watch the dot — taps make it jump.";
-    n.textContent = 'Start';
-  } else if (p === 1) {
-    t.textContent = 'Hold still and tap a few times.';
-    d.textContent = 'Keep the puck still and tap the top/sides. Measuring the spikes…';
-    despikeCal.tapPeak = 0; despikeCalPrev = null; despikeCalRecording = true;
-    n.textContent = 'Next';
-  } else if (p === 2) {
-    t.textContent = 'Now move diagonally — do NOT tap.';
-    d.textContent = 'Make your normal diagonal motions without tapping. Measuring…';
-    despikeCal.movePeak = 0; despikeCalPrev = null; despikeCalRecording = true;
-    n.textContent = 'Finish';
-  } else if (p === 3) {
-    despikeCalRecording = false;
-    let thr = Math.round(Math.min(200, Math.max(5, despikeCal.movePeak * 1.3)));
-    if (despikeCal.tapPeak > 0 && thr > despikeCal.tapPeak * 0.9) {
-      thr = Math.round(Math.max(5, despikeCal.tapPeak * 0.9));
-    }
-    despikeCal.result = thr;
-    onDespikeThreshold(thr);
-    onDespikeStrength(100);
-    sendCmd('sens set despike_enabled 1');
-    document.getElementById('despikeEnabled').classList.add('on');
-    const f = document.getElementById('despikeFields');
-    if (f) { f.style.opacity = '1'; f.style.pointerEvents = ''; }
-    t.textContent = 'Done.';
-    d.innerHTML = `Motion peak <strong>${despikeCal.movePeak.toFixed(0)}</strong> · tap peak <strong>${despikeCal.tapPeak.toFixed(0)}</strong>.<br>Set <strong>Threshold ${thr}</strong>, Strength 100%. Move + tap to check — no jolt now.`;
-    n.textContent = 'Save';
-  }
-}
-
-function despikeCalNext() {
-  if (despikeCalPhase < 3) despikeCalSetPhase(despikeCalPhase + 1);
-  else despikeCalClose();   // already applied
-}
-
-function despikeCalCancel() {
-  const s = despikeCalSnapshot;
-  if (s) {
-    onDespikeThreshold(s.threshold);
-    onDespikeStrength(s.strength);
-    sendCmd('sens set despike_enabled ' + (s.enabled ? 1 : 0));
-    document.getElementById('despikeEnabled').classList.toggle('on', s.enabled);
-  }
-  despikeCalClose();
-}
-
-function despikeCalClose() {
-  despikeCalRecording = false;
-  if (despikeCalRaf) { cancelAnimationFrame(despikeCalRaf); despikeCalRaf = null; }
-  document.getElementById('despikeCalOverlay').style.display = 'none';
-  despikeCalPhase = 0;
-}
-
-function handleDespikeCalMotion(vals) {
-  if (!despikeCalPrev) { despikeCalPrev = vals.slice(); return; }
-  let peak = 0;
-  for (let i = 0; i < 6; i++) {
-    const dd = Math.abs(vals[i] - despikeCalPrev[i]);
-    if (dd > peak) peak = dd;
-  }
-  despikeCalPrev = vals.slice();
-  if (despikeCalPhase === 1 && peak > despikeCal.tapPeak) despikeCal.tapPeak = peak;
-  if (despikeCalPhase === 2 && peak > despikeCal.movePeak) despikeCal.movePeak = peak;
-  // live dot from tilt (rx=vals[3], ry=vals[4])
-  despikeCalDot.x = Math.max(-1, Math.min(1, (vals[4] || 0) / 350));
-  despikeCalDot.y = Math.max(-1, Math.min(1, (vals[3] || 0) / 350));
-}
-
-function despikeCalStartDraw() {
-  const cv = document.getElementById('despikeCalCanvas');
-  if (!cv) return;
-  const ctx = cv.getContext('2d');
-  const trail = [];
-  function frame() {
-    const w = cv.width, h = cv.height;
-    ctx.fillStyle = '#0d0d0d'; ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.beginPath(); ctx.moveTo(w/2,0); ctx.lineTo(w/2,h); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2); ctx.stroke();
-    const px = w/2 + despikeCalDot.x * (w/2 - 12);
-    const py = h/2 - despikeCalDot.y * (h/2 - 12);
-    trail.push({x:px,y:py}); if (trail.length > 30) trail.shift();
-    for (let i = 0; i < trail.length; i++) {
-      const a = i / trail.length;
-      ctx.fillStyle = `rgba(0,255,136,${a*0.5})`;
-      ctx.beginPath(); ctx.arc(trail[i].x, trail[i].y, 2, 0, Math.PI*2); ctx.fill();
-    }
-    ctx.fillStyle = '#00ff88';
-    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.fill();
-    despikeCalRaf = requestAnimationFrame(frame);
-  }
-  frame();
-}
-
 function onSensChange(param, sliderId, valId) {
   const v = parseFloat(document.getElementById(sliderId).value);
   const decimals = param.startsWith('kalman') ? 3 : 1;
@@ -4776,362 +4628,268 @@ function sensReset() {
   sendCmd('actions ' + JSON.stringify(actions));
 }
 
-// Calibration Wizard Logic
+// ── Calibration Mega Wizard (de-spike + sensitivity + inversion) ─────────────
 let wizardStep = 0;
+let wizardTimer = null;
 let wizardOriginalSensitivities = null;
+let wizardSnapshot = null;
 let wizardPeaks = {};
 let wizardRecording = false;
-let wizardTimer = null;
-let wizardRemainingTimeMs = 0;
+let wizardDespike = { tapPeak: 0, movePeak: 0, prev: null, result: null };
+let wizardInvSign = {};          // axisKey -> physical sign during its "+" deflection
+let wizardCanvasDot = { x: 0, y: 0 };
+let wizardCanvasRaf = null;
+
+const WIZ_AXIS_KEY = ['x', 'y', 'z', 'rx', 'ry', 'rz'];
 
 const wizardStepData = [
-  {
-    title: "Start Calibration",
-    instruction: "Welcome to Puck Sensitivity Calibration.",
-    details: "This wizard helps set optimal sensitivities. You will deflect the puck in each direction to measure your natural comfort range.<br><br>Ready? Press Start."
-  },
-  {
-    title: "Step 1: X+ Axis",
-    instruction: "Deflect puck fully RIGHT.",
-    details: "Push the puck right to your comfortable limit, then let go.",
-    axisIndex: 0,
-    isPositive: true,
-    key: 'x_pos',
-    dirLabel: 'Right'
-  },
-  {
-    title: "Step 2: X- Axis",
-    instruction: "Deflect puck fully LEFT.",
-    details: "Push the puck left to your comfortable limit, then let go.",
-    axisIndex: 0,
-    isPositive: false,
-    key: 'x_neg',
-    dirLabel: 'Left'
-  },
-  {
-    title: "Step 3: Y+ Axis",
-    instruction: "Deflect puck fully FORWARD.",
-    details: "Push the puck forward to your comfortable limit, then let go.",
-    axisIndex: 1,
-    isPositive: false,
-    key: 'y_pos',
-    dirLabel: 'Forward'
-  },
-  {
-    title: "Step 4: Y- Axis",
-    instruction: "Deflect puck fully BACKWARD.",
-    details: "Pull the puck backward to your comfortable limit, then let go.",
-    axisIndex: 1,
-    isPositive: true,
-    key: 'y_neg',
-    dirLabel: 'Backward'
-  },
-  {
-    title: "Step 5: Z+ Axis",
-    instruction: "Pull puck fully UP.",
-    details: "Pull the puck upward to your comfortable limit, then let go.",
-    axisIndex: 2,
-    isPositive: false,
-    key: 'z_pos',
-    dirLabel: 'Up'
-  },
-  {
-    title: "Step 6: Z- Axis",
-    instruction: "Push puck fully DOWN.",
-    details: "Push the puck downward to your comfortable limit, then let go.",
-    axisIndex: 2,
-    isPositive: true,
-    key: 'z_neg',
-    dirLabel: 'Down'
-  },
-  {
-    title: "Step 7: Rx+ Axis",
-    instruction: "Tilt puck fully FORWARD.",
-    details: "Tilt the puck forward to your comfortable limit, then let go.",
-    axisIndex: 3,
-    isPositive: false,
-    key: 'rx_pos',
-    dirLabel: 'Tilt Forward'
-  },
-  {
-    title: "Step 8: Rx- Axis",
-    instruction: "Tilt puck fully BACKWARD.",
-    details: "Tilt the puck backward to your comfortable limit, then let go.",
-    axisIndex: 3,
-    isPositive: true,
-    key: 'rx_neg',
-    dirLabel: 'Tilt Backward'
-  },
-  {
-    title: "Step 9: Ry+ Axis",
-    instruction: "Tilt puck fully LEFT.",
-    details: "Tilt the puck left to your comfortable limit, then let go.",
-    axisIndex: 4,
-    isPositive: true,
-    key: 'ry_pos',
-    dirLabel: 'Tilt Left'
-  },
-  {
-    title: "Step 10: Ry- Axis",
-    instruction: "Tilt puck fully RIGHT.",
-    details: "Tilt the puck right to your comfortable limit, then let go.",
-    axisIndex: 4,
-    isPositive: false,
-    key: 'ry_neg',
-    dirLabel: 'Tilt Right'
-  },
-  {
-    title: "Step 11: Rz+ Axis",
-    instruction: "Twist puck fully LEFT.",
-    details: "Twist the puck counter-clockwise to your comfortable limit, then let go.",
-    axisIndex: 5,
-    isPositive: false,
-    key: 'rz_pos',
-    dirLabel: 'Twist Left'
-  },
-  {
-    title: "Step 12: Rz- Axis",
-    instruction: "Twist puck fully RIGHT.",
-    details: "Twist the puck clockwise to your comfortable limit, then let go.",
-    axisIndex: 5,
-    isPositive: true,
-    key: 'rz_neg',
-    dirLabel: 'Twist Right'
-  },
-  {
-    title: "Calibration Complete",
-    instruction: "All directions calibrated!",
-    details: "Review the calculated sensitivities below. Press Save to apply them.",
-    isCompleteStep: true
-  }
+  { type: 'intro', title: "Calibration Wizard",
+    instruction: "Auto-calibrate your puck.",
+    details: "This sets the tap <strong>de-spike</strong> filter, per-axis <strong>sensitivity</strong>, and <strong>inversion</strong> in one pass. Follow each prompt; the wizard measures and applies as you go.<br><br>Ready? Press Start." },
+  { type: 'despike', phase: 'tap', title: "De-spike · Tap",
+    instruction: "Hold the puck still and tap a few times.",
+    details: "Keep it still and tap the top/sides. Watch the dot jump on each tap — that's the spike being measured." },
+  { type: 'despike', phase: 'move', title: "De-spike · Move",
+    instruction: "Now move diagonally — do NOT tap.",
+    details: "Make your normal diagonal motions without tapping. The threshold lands between your motion and your tap spikes." },
+  { type: 'axis', title: "X+ (Right)",    instruction: "Deflect puck fully RIGHT.",    details: "Push the puck right to your comfortable limit, then let go.",   axisIndex: 0, isPositive: true,  key: 'x_pos',  dirLabel: 'Right' },
+  { type: 'axis', title: "X- (Left)",     instruction: "Deflect puck fully LEFT.",     details: "Push the puck left to your comfortable limit, then let go.",    axisIndex: 0, isPositive: false, key: 'x_neg',  dirLabel: 'Left' },
+  { type: 'axis', title: "Y+ (Forward)",  instruction: "Deflect puck fully FORWARD.",  details: "Push the puck forward to your limit, then let go.",             axisIndex: 1, isPositive: false, key: 'y_pos',  dirLabel: 'Forward' },
+  { type: 'axis', title: "Y- (Backward)", instruction: "Deflect puck fully BACKWARD.", details: "Pull the puck backward to your limit, then let go.",            axisIndex: 1, isPositive: true,  key: 'y_neg',  dirLabel: 'Backward' },
+  { type: 'axis', title: "Z+ (Up)",       instruction: "Pull puck fully UP.",          details: "Pull the puck upward to your limit, then let go.",              axisIndex: 2, isPositive: false, key: 'z_pos',  dirLabel: 'Up' },
+  { type: 'axis', title: "Z- (Down)",     instruction: "Push puck fully DOWN.",        details: "Push the puck downward to your limit, then let go.",            axisIndex: 2, isPositive: true,  key: 'z_neg',  dirLabel: 'Down' },
+  { type: 'axis', title: "Rx+ (Tilt Fwd)",instruction: "Tilt puck fully FORWARD.",     details: "Tilt forward to your limit, then let go.",                     axisIndex: 3, isPositive: false, key: 'rx_pos', dirLabel: 'Tilt Forward' },
+  { type: 'axis', title: "Rx- (Tilt Back)",instruction:"Tilt puck fully BACKWARD.",    details: "Tilt backward to your limit, then let go.",                    axisIndex: 3, isPositive: true,  key: 'rx_neg', dirLabel: 'Tilt Backward' },
+  { type: 'axis', title: "Ry+ (Tilt Left)",instruction:"Tilt puck fully LEFT.",        details: "Tilt left to your limit, then let go.",                        axisIndex: 4, isPositive: true,  key: 'ry_pos', dirLabel: 'Tilt Left' },
+  { type: 'axis', title: "Ry- (Tilt Right)",instruction:"Tilt puck fully RIGHT.",      details: "Tilt right to your limit, then let go.",                       axisIndex: 4, isPositive: false, key: 'ry_neg', dirLabel: 'Tilt Right' },
+  { type: 'axis', title: "Rz+ (Twist Left)",instruction:"Twist puck fully LEFT.",      details: "Twist counter-clockwise to your limit, then let go.",          axisIndex: 5, isPositive: false, key: 'rz_pos', dirLabel: 'Twist Left' },
+  { type: 'axis', title: "Rz- (Twist Right)",instruction:"Twist puck fully RIGHT.",    details: "Twist clockwise to your limit, then let go.",                  axisIndex: 5, isPositive: true,  key: 'rz_neg', dirLabel: 'Twist Right' },
+  { type: 'summary', title: "Calibration Complete", instruction: "All set!", details: "" }
 ];
 
-function startCalibrationWizard() {
-  wizardOriginalSensitivities = JSON.parse(JSON.stringify(actions.sensitivity || {}));
-  
-  const keys = ['x_pos', 'x_neg', 'y_pos', 'y_neg', 'z_pos', 'z_neg', 'rx_pos', 'rx_neg', 'ry_pos', 'ry_neg', 'rz_pos', 'rz_neg'];
+function openMegaWizard() {
+  wizardSnapshot = {
+    sensitivity: JSON.parse(JSON.stringify((actions && actions.sensitivity) || {})),
+    inversion:   JSON.parse(JSON.stringify((actions && actions.inversion) || {})),
+    despike: {
+      enabled: document.getElementById('despikeEnabled') ? document.getElementById('despikeEnabled').classList.contains('on') : true,
+      threshold: parseFloat((document.getElementById('despikeThreshold') || {}).value || '40'),
+      strength: parseFloat((document.getElementById('despikeStrength') || {}).value || '100'),
+    }
+  };
+  wizardOriginalSensitivities = wizardSnapshot.sensitivity;
   wizardPeaks = {};
-  keys.forEach(k => { wizardPeaks[k] = 0.0; });
-
+  wizardDespike = { tapPeak: 0, movePeak: 0, prev: null, result: null };
+  wizardInvSign = {};
+  // Measure the raw physical signal: zero sensitivity + inversion so MOTION
+  // reflects the actual puck motion (we set the real values at save).
   if (!actions.sensitivity) actions.sensitivity = {};
-  keys.forEach(k => { actions.sensitivity[k] = 1.0; });
+  if (!actions.inversion) actions.inversion = {};
+  wizardStepData.forEach(s => { if (s.key) actions.sensitivity[s.key] = 1.0; });
+  WIZ_AXIS_KEY.forEach(k => { actions.inversion[k] = false; });
   sendCmd('actions ' + JSON.stringify(actions));
-
+  sendCmd('sens set despike_enabled 0');
   document.getElementById('calibrationWizardOverlay').style.display = 'flex';
+  wizardStartCanvas();
   setWizardStep(0);
 }
+// Legacy entry name kept working.
+function startCalibrationWizard() { openMegaWizard(); }
 
 function cancelCalibrationWizard() {
-  if (wizardTimer) {
-    clearTimeout(wizardTimer);
-    wizardTimer = null;
-  }
-  if (wizardOriginalSensitivities) {
-    actions.sensitivity = wizardOriginalSensitivities;
+  if (wizardTimer) { clearTimeout(wizardTimer); wizardTimer = null; }
+  const s = wizardSnapshot;
+  if (s) {
+    actions.sensitivity = s.sensitivity;
+    actions.inversion = s.inversion;
     sendCmd('actions ' + JSON.stringify(actions));
-    syncActionsUI();
+    onDespikeThreshold(s.despike.threshold);
+    onDespikeStrength(s.despike.strength);
+    sendCmd('sens set despike_enabled ' + (s.despike.enabled ? 1 : 0));
+    const de = document.getElementById('despikeEnabled');
+    if (de) de.classList.toggle('on', s.despike.enabled);
+    if (typeof syncActionsUI === 'function') syncActionsUI();
   }
-  document.getElementById('calibrationWizardOverlay').style.display = 'none';
+  wizardClose();
+}
+
+function wizardClose() {
   wizardRecording = false;
+  if (wizardCanvasRaf) { cancelAnimationFrame(wizardCanvasRaf); wizardCanvasRaf = null; }
+  document.getElementById('calibrationWizardOverlay').style.display = 'none';
   wizardStep = 0;
 }
 
 function setWizardStep(stepIdx) {
-  if (wizardTimer) {
-    clearTimeout(wizardTimer);
-    wizardTimer = null;
-  }
+  if (wizardTimer) { clearTimeout(wizardTimer); wizardTimer = null; }
   wizardStep = stepIdx;
   const step = wizardStepData[stepIdx];
-  
-  document.getElementById('wizardStepIndicator').textContent = `Step ${stepIdx}/13`;
-  document.getElementById('wizardTitle').textContent = step.title;
-  document.getElementById('wizardInstruction').textContent = step.instruction;
-  
+  const last = wizardStepData.length - 1;
+  const canvas = document.getElementById('wizardCanvas');
   const liveValEl = document.getElementById('wizardLiveValue');
   const progressContainer = document.getElementById('wizardProgressBarContainer');
   const detailsEl = document.getElementById('wizardDetails');
   const nextBtn = document.getElementById('wizardNextBtn');
   const cancelBtn = document.getElementById('wizardCancelBtn');
   const resetBtn = document.getElementById('wizardResetBtn');
-  
-  if (stepIdx === 0) {
-    liveValEl.style.display = 'none';
-    progressContainer.style.display = 'none';
-    resetBtn.style.display = 'none';
+
+  document.getElementById('wizardStepIndicator').textContent = `Step ${stepIdx}/${last}`;
+  document.getElementById('wizardTitle').textContent = step.title;
+  document.getElementById('wizardInstruction').textContent = step.instruction;
+  wizardRecording = false;
+  liveValEl.style.display = 'none';
+  progressContainer.style.display = 'none';
+  resetBtn.style.display = 'none';
+  canvas.style.display = 'none';
+  nextBtn.style.display = 'inline-block';
+  cancelBtn.textContent = 'Cancel';
+
+  if (step.type === 'intro') {
     detailsEl.innerHTML = step.details;
     nextBtn.textContent = 'Start';
-    nextBtn.style.display = 'inline-block';
-    cancelBtn.textContent = 'Cancel';
-  } else if (stepIdx >= 1 && stepIdx <= 12) {
-    step.peakValue = 0.0;
-    step.hasDeflected = false;
-    step.peakCaptured = false;
-    
-    liveValEl.style.display = 'block';
-    liveValEl.textContent = '0.0';
-    liveValEl.style.color = 'var(--text)';
-    
+  } else if (step.type === 'despike') {
+    canvas.style.display = 'block';
+    detailsEl.innerHTML = step.details;
+    if (step.phase === 'tap') wizardDespike.tapPeak = 0; else wizardDespike.movePeak = 0;
+    wizardDespike.prev = null;
+    wizardRecording = true;
+    nextBtn.textContent = 'Next';
+  } else if (step.type === 'axis') {
+    step.peakValue = 0.0; step.hasDeflected = false; step.peakCaptured = false;
+    liveValEl.style.display = 'block'; liveValEl.textContent = '0.0'; liveValEl.style.color = 'var(--text)';
     progressContainer.style.display = 'block';
     const progBar = document.getElementById('wizardProgressBar');
-    progBar.style.width = '0%';
-    progBar.style.background = 'var(--green)';
-    
-    detailsEl.innerHTML = step.details + `<br><br><strong>Waiting for deflection...</strong>`;
-    nextBtn.textContent = 'Next';
+    progBar.style.width = '0%'; progBar.style.background = 'var(--green)';
+    detailsEl.innerHTML = step.details + `<br><br><strong>Waiting for deflection…</strong>`;
     nextBtn.style.display = 'none';
-    cancelBtn.textContent = 'Cancel';
     resetBtn.style.display = 'inline-block';
-    
     wizardRecording = true;
-  } else if (stepIdx === 13) {
-    liveValEl.style.display = 'none';
-    progressContainer.style.display = 'none';
-    resetBtn.style.display = 'none';
-    wizardRecording = false;
-    
-    let summaryHtml = step.details + '<br><br><div style="max-height: 200px; overflow-y: auto;"><table style="width:100%; border-collapse: collapse; font-size:12px;">';
-    summaryHtml += '<tr style="border-bottom:1px solid var(--border);color:var(--green)"><th style="text-align:left;padding:4px">Direction</th><th style="text-align:right;padding:4px">Value</th></tr>';
-    
-    for (let i = 1; i <= 12; i++) {
-      const s = wizardStepData[i];
-      const sens = (350.0 / Math.max(s.peakValue, 7.0)).toFixed(1);
-      summaryHtml += `<tr style="border-bottom:1px solid var(--border)">`;
-      summaryHtml += `<td style="padding:4px">${s.title.split(': ')[1]} (${s.dirLabel})</td>`;
-      summaryHtml += `<td style="text-align:right;padding:4px">${sens}</td>`;
-      summaryHtml += `</tr>`;
-    }
-    summaryHtml += '</table></div>';
-    
-    detailsEl.innerHTML = summaryHtml;
-    
+  } else if (step.type === 'summary') {
+    detailsEl.innerHTML = wizardBuildSummary();
     nextBtn.textContent = 'Save';
-    nextBtn.style.display = 'inline-block';
-    cancelBtn.textContent = 'Cancel';
   }
 }
 
 function resetWizardStep() {
-  if (wizardTimer) {
-    clearTimeout(wizardTimer);
-    wizardTimer = null;
-  }
+  if (wizardTimer) { clearTimeout(wizardTimer); wizardTimer = null; }
   const step = wizardStepData[wizardStep];
-  if (!step) return;
-  step.peakValue = 0.0;
-  step.hasDeflected = false;
-  step.peakCaptured = false;
-  
+  if (!step || step.type !== 'axis') return;
+  step.peakValue = 0.0; step.hasDeflected = false; step.peakCaptured = false;
   document.getElementById('wizardLiveValue').textContent = '0.0';
   document.getElementById('wizardLiveValue').style.color = 'var(--text)';
   document.getElementById('wizardProgressBar').style.width = '0%';
   document.getElementById('wizardProgressBar').style.background = 'var(--green)';
   document.getElementById('wizardNextBtn').style.display = 'none';
-  document.getElementById('wizardResetBtn').style.display = 'inline-block';
-  document.getElementById('wizardDetails').innerHTML = `
-    ${step.details}<br><br>
-    <strong>Waiting for deflection...</strong>
-  `;
+  document.getElementById('wizardDetails').innerHTML = step.details + `<br><br><strong>Waiting for deflection…</strong>`;
   wizardRecording = true;
 }
 
 function nextCalibrationWizardStep() {
-  if (wizardStep < 13) {
-    setWizardStep(wizardStep + 1);
-  } else {
-    saveCalibrationResults();
-  }
+  if (wizardStep < wizardStepData.length - 1) setWizardStep(wizardStep + 1);
+  else saveCalibrationResults();
+}
+
+function wizardSensFor(s) { return 350.0 / Math.max(s.peakValue || 0, 7.0); }
+
+function wizardComputeDespike() {
+  let thr = Math.round(Math.min(200, Math.max(5, wizardDespike.movePeak * 1.3)));
+  if (wizardDespike.tapPeak > 0 && thr > wizardDespike.tapPeak * 0.9) thr = Math.round(Math.max(5, wizardDespike.tapPeak * 0.9));
+  wizardDespike.result = thr;
+  return thr;
+}
+
+function wizardBuildSummary() {
+  const thr = wizardComputeDespike();
+  let html = `<div style="max-height:220px;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">`;
+  html += `<tr style="color:var(--green)"><td style="padding:3px">De-spike threshold</td><td style="text-align:right">${thr}</td></tr>`;
+  html += `<tr style="color:var(--green)"><td style="padding:3px">De-spike strength</td><td style="text-align:right">100%</td></tr>`;
+  const inverted = WIZ_AXIS_KEY.filter(k => wizardInvSign[k] === -1);
+  html += `<tr><td style="padding:3px;border-top:1px solid var(--border)">Inverted axes</td><td style="text-align:right;border-top:1px solid var(--border)">${inverted.length ? inverted.join(', ') : 'none'}</td></tr>`;
+  wizardStepData.forEach(s => {
+    if (s.type !== 'axis') return;
+    html += `<tr><td style="padding:3px">${s.title}</td><td style="text-align:right">${wizardSensFor(s).toFixed(1)}</td></tr>`;
+  });
+  html += `</table></div>`;
+  return html;
 }
 
 function saveCalibrationResults() {
+  const thr = wizardDespike.result != null ? wizardDespike.result : wizardComputeDespike();
+  onDespikeThreshold(thr);
+  onDespikeStrength(100);
+  sendCmd('sens set despike_enabled 1');
+  const de = document.getElementById('despikeEnabled'); if (de) de.classList.add('on');
+  const f = document.getElementById('despikeFields'); if (f) { f.style.opacity = '1'; f.style.pointerEvents = ''; }
   if (!actions.sensitivity) actions.sensitivity = {};
-  
-  for (let i = 1; i <= 12; i++) {
-    const s = wizardStepData[i];
-    const sens = parseFloat((350.0 / Math.max(s.peakValue, 7.0)).toFixed(1));
-    actions.sensitivity[s.key] = sens;
-  }
-  
+  wizardStepData.forEach(s => { if (s.type === 'axis') actions.sensitivity[s.key] = parseFloat(wizardSensFor(s).toFixed(1)); });
+  if (!actions.inversion) actions.inversion = {};
+  WIZ_AXIS_KEY.forEach(k => { actions.inversion[k] = (wizardInvSign[k] === -1); });
   sendCmd('actions ' + JSON.stringify(actions));
-  syncActionsUI();
-  
-  document.getElementById('calibrationWizardOverlay').style.display = 'none';
-  wizardStep = 0;
+  if (typeof syncActionsUI === 'function') syncActionsUI();
+  wizardClose();
 }
 
 function handleWizardMotion(vals) {
   const step = wizardStepData[wizardStep];
-  if (!step || step.axisIndex === undefined || step.peakCaptured) return;
-  
-  const inv = (actions && actions.inversion) ? actions.inversion : {};
-  let val = vals[step.axisIndex];
-  
-  // Undo user inversion to calibrate raw/physical direction
-  let axisKey = '';
-  if (step.axisIndex === 0) axisKey = 'x';
-  else if (step.axisIndex === 1) axisKey = 'y';
-  else if (step.axisIndex === 2) axisKey = 'z';
-  else if (step.axisIndex === 3) axisKey = 'rx';
-  else if (step.axisIndex === 4) axisKey = 'ry';
-  else if (step.axisIndex === 5) axisKey = 'rz';
-  
-  if (axisKey && inv[axisKey]) {
-    val = -val;
+  if (!step) return;
+  wizardCanvasDot.x = Math.max(-1, Math.min(1, (vals[4] || 0) / 350));
+  wizardCanvasDot.y = Math.max(-1, Math.min(1, (vals[3] || 0) / 350));
+
+  if (step.type === 'despike') {
+    if (!wizardDespike.prev) { wizardDespike.prev = vals.slice(); return; }
+    let peak = 0;
+    for (let i = 0; i < 6; i++) { const d = Math.abs(vals[i] - wizardDespike.prev[i]); if (d > peak) peak = d; }
+    wizardDespike.prev = vals.slice();
+    if (step.phase === 'tap' && peak > wizardDespike.tapPeak) wizardDespike.tapPeak = peak;
+    if (step.phase === 'move' && peak > wizardDespike.movePeak) wizardDespike.movePeak = peak;
+    return;
   }
-  
-  let v = 0;
-  if (step.isPositive) {
-    v = val > 0 ? val : 0;
-  } else {
-    v = val < 0 ? Math.abs(val) : 0;
+
+  if (step.type !== 'axis' || step.peakCaptured) return;
+  const raw = vals[step.axisIndex];
+  const v = Math.abs(raw);  // magnitude — registers deflection even on a physically inverted axis
+  // Inversion: on each "+" step, record the physical sign the user produced
+  // (inversion is zeroed during the wizard, so this is the raw convention).
+  if (step.key.endsWith('_pos') && Math.abs(raw) > 10) {
+    wizardInvSign[WIZ_AXIS_KEY[step.axisIndex]] = (raw >= 0 ? 1 : -1);
   }
-  
   document.getElementById('wizardLiveValue').textContent = v.toFixed(1);
-  
-  if (v > 10.0) {
-    step.hasDeflected = true;
-  }
-  
+  if (v > 10.0) step.hasDeflected = true;
   if (step.hasDeflected) {
     if (v > step.peakValue) {
       step.peakValue = v;
-      document.getElementById('wizardDetails').innerHTML = `
-        ${step.details}<br><br>
-        <span style="color: var(--green)">Deflection active...</span><br>
-        Current Peak: <strong>${step.peakValue.toFixed(1)}</strong>
-      `;
-      
-      const pct = Math.min(100, (step.peakValue / 350.0) * 100);
-      document.getElementById('wizardProgressBar').style.width = pct + '%';
+      document.getElementById('wizardDetails').innerHTML = `${step.details}<br><br><span style="color:var(--green)">Deflection active…</span><br>Peak: <strong>${v.toFixed(1)}</strong>`;
+      document.getElementById('wizardProgressBar').style.width = Math.min(100, (v / 350) * 100) + '%';
     } else if (v < step.peakValue * 0.7) {
-      step.peakCaptured = true;
-      wizardRecording = false;
-      
+      step.peakCaptured = true; wizardRecording = false;
       const liveValEl = document.getElementById('wizardLiveValue');
-      liveValEl.style.color = 'var(--green)';
-      liveValEl.textContent = step.peakValue.toFixed(1);
-      
-      const progBar = document.getElementById('wizardProgressBar');
-      progBar.style.background = 'var(--green)';
-      progBar.style.width = '100%';
-      
-      const sens = (350.0 / Math.max(step.peakValue, 7.0)).toFixed(1);
-      document.getElementById('wizardDetails').innerHTML = `
-        <strong>Peak Captured!</strong><br>
-        Comfort Peak: <strong>${step.peakValue.toFixed(1)}</strong><br>
-        Calculated Sensitivity: <strong>${sens}</strong><br><br>
-        Auto-advancing in 1.5s...
-      `;
+      liveValEl.style.color = 'var(--green)'; liveValEl.textContent = step.peakValue.toFixed(1);
+      const progBar = document.getElementById('wizardProgressBar'); progBar.style.background = 'var(--green)'; progBar.style.width = '100%';
+      document.getElementById('wizardDetails').innerHTML = `<strong>Captured!</strong> Peak ${step.peakValue.toFixed(1)} → sensitivity ${wizardSensFor(step).toFixed(1)}<br><br>Auto-advancing…`;
       document.getElementById('wizardNextBtn').style.display = 'inline-block';
-      
-      const currentStepIdx = wizardStep;
-      wizardTimer = setTimeout(() => {
-        if (wizardStep === currentStepIdx && step.peakCaptured) {
-          nextCalibrationWizardStep();
-        }
-      }, 1500);
+      const cur = wizardStep;
+      wizardTimer = setTimeout(() => { if (wizardStep === cur && step.peakCaptured) nextCalibrationWizardStep(); }, 1200);
     }
   }
+}
+
+function wizardStartCanvas() {
+  const cv = document.getElementById('wizardCanvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const trail = [];
+  function frame() {
+    const w = cv.width, h = cv.height;
+    ctx.fillStyle = '#0d0d0d'; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.beginPath();
+    ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+    const px = w / 2 + wizardCanvasDot.x * (w / 2 - 12), py = h / 2 - wizardCanvasDot.y * (h / 2 - 12);
+    trail.push({ x: px, y: py }); if (trail.length > 30) trail.shift();
+    for (let i = 0; i < trail.length; i++) { const a = i / trail.length; ctx.fillStyle = `rgba(0,255,136,${a * 0.5})`; ctx.beginPath(); ctx.arc(trail[i].x, trail[i].y, 2, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = '#00ff88'; ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+    wizardCanvasRaf = requestAnimationFrame(frame);
+  }
+  frame();
 }
 
 function onBrightChange() {
