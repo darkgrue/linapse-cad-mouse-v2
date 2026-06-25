@@ -119,7 +119,7 @@ void handleConfigCommand(const String& args) {
     snprintf(buf, sizeof(buf),
              "{\"brightness\":%d,\"color\":\"%06lX\",\"effect\":\"%s\","
              "\"dead_t\":%.2f,\"dead_r\":%.2f,\"kalman_q\":%.3f,\"kalman_r\":%.3f,\"exp\":%.2f,"
-             "\"tap_sens\":%.2f,\"invert_tap_z\":%d,\"spherical\":%d}\n",
+             "\"tap_sens\":%.2f,\"invert_tap_z\":%d,\"spherical\":%d,\"spring_head\":%d}\n",
              ledConfig.brightness, (unsigned long)ledConfig.idleColor,
              effectName(ledConfig.effect),
              sensConfig.deadT, sensConfig.deadR,
@@ -127,7 +127,8 @@ void handleConfigCommand(const String& args) {
              sensConfig.sensitivityExp,
              sensConfig.tapThreshold,
              sensConfig.invertTapZ ? 1 : 0,
-             sensConfig.sphericalMode ? 1 : 0);
+             sensConfig.sphericalMode ? 1 : 0,
+             sensConfig.springHead ? 1 : 0);
     Serial.print(buf);
     return;
   }
@@ -145,13 +146,14 @@ void handleSensCommand(const String& args) {
     char buf[200];
     snprintf(buf, sizeof(buf),
              "{\"dead_t\":%.2f,\"dead_r\":%.2f,\"kalman_q\":%.3f,\"kalman_r\":%.3f,\"exp\":%.2f,"
-             "\"tap_sens\":%.2f,\"invert_tap_z\":%d,\"spherical\":%d}\n",
+             "\"tap_sens\":%.2f,\"invert_tap_z\":%d,\"spherical\":%d,\"spring_head\":%d}\n",
              sensConfig.deadT, sensConfig.deadR,
              sensConfig.kalmanQ, sensConfig.kalmanR,
              sensConfig.sensitivityExp,
              sensConfig.tapThreshold,
              sensConfig.invertTapZ ? 1 : 0,
-             sensConfig.sphericalMode ? 1 : 0);
+             sensConfig.sphericalMode ? 1 : 0,
+             sensConfig.springHead ? 1 : 0);
     Serial.print(buf);
     return;
   }
@@ -175,7 +177,8 @@ void handleSensCommand(const String& args) {
     else if (param == "tap_sens")     sensConfig.tapThreshold = val;
     else if (param == "invert_tap_z") sensConfig.invertTapZ = (val > 0.5f);
     else if (param == "spherical")    sensConfig.sphericalMode = (val > 0.5f);
-    else { Serial.println("ERR unknown param: dead_t|dead_r|kalman_q|kalman_r|exp|tap_sens|invert_tap_z|spherical"); return; }
+    else if (param == "spring_head")  sensConfig.springHead = (val > 0.5f);
+    else { Serial.println("ERR unknown param: dead_t|dead_r|kalman_q|kalman_r|exp|tap_sens|invert_tap_z|spherical|spring_head"); return; }
     sensConfig.save();
     Serial.println("OK");
     return;
@@ -208,7 +211,7 @@ void handleSerial() {
       else if (serialBuf.startsWith("config ")) handleConfigCommand(serialBuf.substring(7));
       else if (serialBuf.startsWith("sens "))   handleSensCommand(serialBuf.substring(5));
       else if (serialBuf.startsWith("debug "))  handleDebugCommand(serialBuf.substring(6));
-      else if (serialBuf == "version")          { Serial.println("version=2.22.0"); }
+      else if (serialBuf == "version")          { Serial.println("version=2.23.0"); }
       else if (serialBuf.startsWith("volume ")) {
         int val = atoi(serialBuf.c_str() + 7);
         if (val >= 0 && val <= 100) {

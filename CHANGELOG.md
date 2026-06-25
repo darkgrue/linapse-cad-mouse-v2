@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.23.0] - 2026-06-24
+
+### Added
+- **Spring Head hardware preset.** New "Spring Head" toggle in Motion → General applies a higher-gain table tuned for the spring-head variant (magnets mounted further from the sensors). Gains are asymmetric on the Z translation axis to match the physical spring characteristics. Persisted to EEPROM; visible as `spring_head` in `sens get`.
+
+### Fixed
+- **`asyncio` import missing in `serial_port.py`.** Auto-flash on firmware version mismatch crashed the serial thread with `NameError: name 'asyncio' is not defined`, leaving the puck unresponsive until the service was restarted.
+
 ## [2.22.0] - 2026-06-24
 
 ### Added

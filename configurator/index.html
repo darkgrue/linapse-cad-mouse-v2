@@ -1293,6 +1293,19 @@ input[type=range]::-webkit-slider-thumb {
         </div>
 
         <div class="field-group">
+          <div class="field-label" style="color:var(--green);letter-spacing:2px;font-size:10px;font-family:'Barlow Condensed',sans-serif">HARDWARE</div>
+          <div style="margin-top: 8px;">
+            <div class="toggle-row" style="padding: 4px 0; border: none; margin-bottom: 0;">
+              <span class="toggle-label" style="font-size: 10px; color: var(--text3); margin: 0; text-transform: uppercase; letter-spacing: 1px; font-family: 'Barlow Condensed', sans-serif;">Spring Head</span>
+              <div class="toggle" id="sensSpringHead" onclick="toggleSpringHead()"></div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px;line-height:1.3;">
+              Enable when using a spring head (magnets mounted further from sensors). Applies higher gain values tuned for the spring head variant.
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
           <div class="field-label" style="color:var(--green);letter-spacing:2px;font-size:10px;font-family:'Barlow Condensed',sans-serif">AXIS INVERSIONS</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-top: 8px;">
             <div class="toggle-row" style="padding: 4px 0; border: none; margin-bottom: 0;">
@@ -1735,7 +1748,7 @@ input[type=range]::-webkit-slider-thumb {
   <button class="btn-footer" onclick="saveActionsFile()">Save Profile</button>
   
   <div class="footer-center" style="display: flex; align-items: center; gap: 10px; position: absolute; left: 50%; transform: translateX(-50%); font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700; color: var(--text3); letter-spacing: 0.5px;">
-    <span id="footerVersionDisplay">v2.21.2</span>
+    <span id="footerVersionDisplay">v2.23.0</span>
     <span id="swUpdateText" style="display: none; color: var(--green); margin-left: 10px;"></span>
     <div id="swUpdateProgressContainer" style="display: none; width: 80px; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden; margin-left: 10px;">
       <div id="swUpdateProgressBar" style="width: 0%; height: 100%; background: var(--green); transition: width 0.1s ease;"></div>
@@ -3155,6 +3168,12 @@ function applyDeviceConfig(cfg) {
       el.classList.toggle('on', !!cfg.invert_tap_z);
     }
   }
+  if (cfg.spring_head !== undefined) {
+    const el = document.getElementById('sensSpringHead');
+    if (el) {
+      el.classList.toggle('on', !!cfg.spring_head);
+    }
+  }
   animateLedPreview();
 }
 
@@ -4264,6 +4283,13 @@ function toggleSphericalMode() {
   const newVal = isCurrentlyOn ? 0 : 1;
   el.classList.toggle('on');
   sendCmd(`sens set spherical ${newVal}`);
+}
+
+function toggleSpringHead() {
+  const el = document.getElementById('sensSpringHead');
+  el.classList.toggle('on');
+  const newVal = el.classList.contains('on') ? 1 : 0;
+  sendCmd(`sens set spring_head ${newVal}`);
 }
 
 function toggleTapZInversion() {

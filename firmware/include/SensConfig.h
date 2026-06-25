@@ -17,6 +17,7 @@ class SensConfig {
   float tapThreshold;   // tap detection velocity threshold
   bool  invertTapZ;     // whether Z axis tap detection is inverted
   bool  sphericalMode;   // whether spherical vector processing is active
+  bool  springHead;      // whether spring head (far-mounted magnets) gain table is active
 
   void load();
   void save();

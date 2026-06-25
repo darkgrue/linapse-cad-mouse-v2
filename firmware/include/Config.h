@@ -23,6 +23,12 @@ const float GAIN_T[3] = {28.0, 28.0, 24.0};
 const float GAIN_R[3] = {18.0, 18.0, 20.0};
 const int SIGN_AXIS[6] = {-1, +1, -1, +1, +1, +1};
 
+// Spring head gains: magnets mounted further from sensors, asymmetric Z spring.
+const float SPRING_HEAD_GAIN_T_POS[3] = {120.0f, 120.0f,  85.0f};
+const float SPRING_HEAD_GAIN_T_NEG[3] = {120.0f, 120.0f, 130.0f};
+const float SPRING_HEAD_GAIN_R_POS[3] = { 50.0f,  50.0f,  60.0f};
+const float SPRING_HEAD_GAIN_R_NEG[3] = { 50.0f,  50.0f,  60.0f};
+
 // Dead zones
 const float DEAD_T = 16.0;
 const float DEAD_R = 20.0;
