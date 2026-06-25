@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.26.0] - 2026-06-25
+
+### Added
+- **Tap de-spike filter.** Taps no longer jolt motion — especially when moving diagonally. The firmware clamps the tap impulse on *every* axis (not just translation), so a tap registers without a hitch. Tunable **Spike Threshold** + **Strength** live on Motion → Tap, with a checkbox to revert to the previous behavior. Needs this firmware version flashed to take effect.
+- **Calibration Wizard.** A new **Wizard** button in the top nav bar runs one guided calibration spanning every section: it measures and sets the de-spike threshold (with a live 2D jitter preview), per-axis **sensitivity**, and per-axis **inversion** — all in a single pass, ending in a review-and-save summary. Cancel restores your previous config.
+
+### Changed
+- **Macro step actions.** The action dropdown inside a macro step now lists every action type (Mode, Media, Gamepad Button, …) from the single shared source, instead of a stale hardcoded subset that was missing the newer actions.
+
 ## [2.25.0] - 2026-06-25
 
 ### Added
