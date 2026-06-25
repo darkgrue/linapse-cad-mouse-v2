@@ -1523,6 +1523,30 @@ input[type=range]::-webkit-slider-thumb {
               </div>
             </div>
           </div>
+
+          <div class="field-group">
+            <div class="field-label" style="color:var(--green);letter-spacing:2px;font-size:10px;font-family:'Barlow Condensed',sans-serif">TAP DE-SPIKE</div>
+            <div class="toggle-row" style="padding:4px 0;border:none;margin-bottom:0">
+              <span class="toggle-label" style="font-size:10px;color:var(--text3);margin:0;text-transform:uppercase;letter-spacing:1px;font-family:'Barlow Condensed',sans-serif">Use de-spike filter</span>
+              <div class="toggle on" id="despikeEnabled" onclick="onDespikeEnabled(this)"></div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px;line-height:1.3;">
+              Smooths tap impulses on all axes so taps don't jolt motion. Off = legacy (zero translation during a tap).
+            </div>
+            <div id="despikeFields" style="margin-top:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+                <span class="field-label" style="margin:0">Spike Threshold</span>
+                <input type="number" id="despikeThresholdVal" min="5" max="200" step="1" value="40" style="width:48px;background:var(--border2);border:1px solid var(--border);color:var(--text);font-size:10px;text-align:right;padding:1px 3px;border-radius:3px;font-family:inherit" oninput="onDespikeThreshold(this.value)">
+              </div>
+              <input type="range" id="despikeThreshold" min="5" max="200" step="1" value="40" oninput="onDespikeThreshold(this.value)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;margin-top:10px">
+                <span class="field-label" style="margin:0">Strength</span>
+                <input type="number" id="despikeStrengthVal" min="0" max="100" step="1" value="100" style="width:48px;background:var(--border2);border:1px solid var(--border);color:var(--text);font-size:10px;text-align:right;padding:1px 3px;border-radius:3px;font-family:inherit" oninput="onDespikeStrength(this.value)">
+              </div>
+              <input type="range" id="despikeStrength" min="0" max="100" step="1" value="100" oninput="onDespikeStrength(this.value)">
+            </div>
+            <button class="btn-apply" onclick="openCalibrateWizard()" style="margin-top:12px">Calibrate…</button>
+          </div>
         </div>
         <!-- INVERT TAB SECTION -->
         <div id="sens-section-invert" class="sens-section" style="display:none">
@@ -3339,6 +3363,21 @@ function applyDeviceConfig(cfg) {
       el.classList.toggle('on', !!cfg.spring_head);
     }
   }
+  if (cfg.despike_enabled !== undefined) {
+    document.getElementById('despikeEnabled')?.classList.toggle('on', !!cfg.despike_enabled);
+    const f = document.getElementById('despikeFields');
+    if (f) { f.style.opacity = cfg.despike_enabled ? '1' : '0.4'; f.style.pointerEvents = cfg.despike_enabled ? '' : 'none'; }
+  }
+  if (cfg.despike_threshold !== undefined) {
+    const t = cfg.despike_threshold;
+    const s = document.getElementById('despikeThreshold'), sv = document.getElementById('despikeThresholdVal');
+    if (s) s.value = t; if (sv) sv.value = Math.round(t);
+  }
+  if (cfg.despike_strength !== undefined) {
+    const p = Math.round(cfg.despike_strength * 100);
+    const s = document.getElementById('despikeStrength'), sv = document.getElementById('despikeStrengthVal');
+    if (s) s.value = p; if (sv) sv.value = p;
+  }
   animateLedPreview();
 }
 
@@ -4186,6 +4225,33 @@ window.addEventListener('resize', () => {
   if (controller2dTab === '2d') { controller2d && controller2d.resize(); }
   else { controllerScene && controllerScene.resize(); }
 });
+
+function onDespikeThreshold(v) {
+  v = parseFloat(v); if (isNaN(v)) return;
+  document.getElementById('despikeThreshold').value = v;
+  document.getElementById('despikeThresholdVal').value = Math.round(v);
+  sendCmd(`sens set despike_threshold ${v}`);
+}
+
+function onDespikeStrength(v) {
+  v = parseFloat(v); if (isNaN(v)) return;
+  document.getElementById('despikeStrength').value = v;
+  document.getElementById('despikeStrengthVal').value = Math.round(v);
+  sendCmd(`sens set despike_strength ${(v / 100).toFixed(2)}`);  // UI 0-100 -> 0-1
+}
+
+function onDespikeEnabled(el) {
+  el.classList.toggle('on');
+  const on = el.classList.contains('on');
+  const f = document.getElementById('despikeFields');
+  if (f) { f.style.opacity = on ? '1' : '0.4'; f.style.pointerEvents = on ? '' : 'none'; }
+  sendCmd(`sens set despike_enabled ${on ? 1 : 0}`);
+}
+
+// Full wizard implemented in a later task; stub keeps the Calibrate button safe.
+function openCalibrateWizard() {
+  alert('Calibration wizard coming soon.');
+}
 
 function onSensChange(param, sliderId, valId) {
   const v = parseFloat(document.getElementById(sliderId).value);
