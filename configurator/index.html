@@ -1890,6 +1890,19 @@ const ACTION_TYPES = [
   { id: 'gamepad_button', label: 'Gamepad Button' },
 ];
 
+// Single source for media commands, shared by the main action editor and macro steps.
+const MEDIA_COMMANDS = [
+  { id: 'play',         label: 'Play' },
+  { id: 'pause',        label: 'Pause' },
+  { id: 'forward',      label: 'Forward (Next Track)' },
+  { id: 'back',         label: 'Back (Prev Track)' },
+  { id: 'fast_forward', label: 'Fast Forward (Seek Right)' },
+  { id: 'rewind',       label: 'Rewind (Seek Left)' },
+  { id: 'mute',         label: 'Mute' },
+  { id: 'volume_up',    label: 'Volume Up' },
+  { id: 'volume_down',  label: 'Volume Down' }
+];
+
 const DEFAULT_ACTIONS = {
   button_override: false,
   dominant_mode: true,
@@ -2639,19 +2652,8 @@ function renderSubFields(type, act, area, onChange) {
 
   if (type === 'media') {
     const curVal = act.command || 'play';
-    const mediaCommands = [
-      { id: 'play',          label: 'Play' },
-      { id: 'pause',         label: 'Pause' },
-      { id: 'forward',       label: 'Forward (Next Track)' },
-      { id: 'back',          label: 'Back (Prev Track)' },
-      { id: 'fast_forward',  label: 'Fast Forward (Seek Right)' },
-      { id: 'rewind',        label: 'Rewind (Seek Left)' },
-      { id: 'mute',          label: 'Mute' },
-      { id: 'volume_up',     label: 'Volume Up' },
-      { id: 'volume_down',   label: 'Volume Down' }
-    ];
     let optionsHtml = '';
-    mediaCommands.forEach(cmd => {
+    MEDIA_COMMANDS.forEach(cmd => {
       optionsHtml += `<option value="${cmd.id}" ${cmd.id === curVal ? 'selected' : ''}>${cmd.label}</option>`;
     });
     area.innerHTML = `
@@ -2770,6 +2772,44 @@ function renderSubFields(type, act, area, onChange) {
 
 function renderStepFields(type, step, container) {
   container.innerHTML = '';
+  if (type === 'none' || type === 'hid_button') {
+    return; // no fields — no-op / native passthrough step
+  }
+  if (type === 'mode') {
+    const modeKeys = actions && actions.modes ? Object.keys(actions.modes) : ['Default'];
+    const curVal = step.action === 'mode' ? (step.value || 'Default') : 'Default';
+    container.innerHTML = `
+      <div class="field-group" style="margin-bottom: 0; width: 100%;">
+        <div class="field-label" style="font-size: 9px; margin-bottom: 3px;">Target Mode</div>
+        <select class="step-mode" style="width: 100%; box-sizing: border-box; background: var(--bg2); color: var(--text); border: 1px solid var(--border); font-size: 11px; padding: 2px 4px;">
+          ${modeKeys.map(m => `<option value="${m}" ${m === curVal ? 'selected' : ''}>${m}</option>`).join('')}
+        </select>
+      </div>`;
+    return;
+  }
+  if (type === 'media') {
+    const curVal = step.action === 'media' ? (step.command || 'play') : 'play';
+    container.innerHTML = `
+      <div class="field-group" style="margin-bottom: 0; width: 100%;">
+        <div class="field-label" style="font-size: 9px; margin-bottom: 3px;">Media Command</div>
+        <select class="step-media" style="width: 100%; box-sizing: border-box; background: var(--bg2); color: var(--text); border: 1px solid var(--border); font-size: 11px; padding: 2px 4px;">
+          ${MEDIA_COMMANDS.map(c => `<option value="${c.id}" ${c.id === curVal ? 'selected' : ''}>${c.label}</option>`).join('')}
+        </select>
+      </div>`;
+    return;
+  }
+  if (type === 'gamepad_button') {
+    const cur = (step.action === 'gamepad_button' && (step.button === 1 || step.button === '1')) ? 1 : 0;
+    container.innerHTML = `
+      <div class="field-group" style="margin-bottom: 0; width: 100%;">
+        <div class="field-label" style="font-size: 9px; margin-bottom: 3px;">Gamepad Button</div>
+        <div class="action-grid" style="grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 0; width: 100%;">
+          <div class="action-chip ${cur===0?'active':''}" onclick="selectBtn(this,'0')" data-gpbtn="0" style="padding: 4px; font-size: 10px; text-align: center;">Button 1 (A)</div>
+          <div class="action-chip ${cur===1?'active':''}" onclick="selectBtn(this,'1')" data-gpbtn="1" style="padding: 4px; font-size: 10px; text-align: center;">Button 2 (B)</div>
+        </div>
+      </div>`;
+    return;
+  }
   if (type === 'key') {
     container.innerHTML = `
       <div class="field-group" style="margin-bottom: 0; width: 100%;">
@@ -2854,17 +2894,19 @@ function addMacroStepRow(container, step, idx) {
 
   const initialType = step.action || (step.delay !== undefined ? 'delay' : 'key');
 
+  // Dropdown built from the single ACTION_TYPES source (minus Macro — no nesting),
+  // plus the macro-only "Delay Only" step. No second hardcoded list to drift.
+  const stepOptions = ACTION_TYPES.filter(t => t.id !== 'macro')
+    .map(t => `<option value="${t.id}" ${initialType === t.id ? 'selected' : ''}>${t.label}</option>`)
+    .join('') +
+    `<option value="delay" ${initialType === 'delay' ? 'selected' : ''}>Delay Only</option>`;
+
   row.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
       <span class="step-title" style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">Step ${idx + 1}</span>
       <div style="display: flex; align-items: center; gap: 8px;">
         <select class="step-action-select" style="width: 110px; margin: 0; font-size: 11px; padding: 2px 4px; background: var(--bg2); color: var(--text); border: 1px solid var(--border);">
-          <option value="key" ${initialType === 'key' ? 'selected' : ''}>Key Combo</option>
-          <option value="mouse_click" ${initialType === 'mouse_click' ? 'selected' : ''}>Mouse Click</option>
-          <option value="mouse_scroll" ${initialType === 'mouse_scroll' ? 'selected' : ''}>Mouse Scroll</option>
-          <option value="mouse_move" ${initialType === 'mouse_move' ? 'selected' : ''}>Mouse Move</option>
-          <option value="exec" ${initialType === 'exec' ? 'selected' : ''}>Command</option>
-          <option value="delay" ${initialType === 'delay' ? 'selected' : ''}>Delay Only</option>
+          ${stepOptions}
         </select>
         <button class="step-delete-btn" style="background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px; padding: 2px 6px;">✕</button>
       </div>
@@ -2970,6 +3012,15 @@ function collectAction(type, area) {
           steps.push({ action: 'mouse_move', x: mx, y: my, delay: delayVal });
         } else if (t === 'exec') {
           steps.push({ action: 'exec', value: row.querySelector('.step-exec')?.value || '', delay: delayVal });
+        } else if (t === 'mode') {
+          steps.push({ action: 'mode', value: row.querySelector('.step-mode')?.value || 'Default', delay: delayVal });
+        } else if (t === 'media') {
+          steps.push({ action: 'media', command: row.querySelector('.step-media')?.value || 'play', delay: delayVal });
+        } else if (t === 'gamepad_button') {
+          const active = row.querySelector('.action-chip.active');
+          steps.push({ action: 'gamepad_button', button: parseInt(active?.dataset.gpbtn || '0'), delay: delayVal });
+        } else if (t === 'none' || t === 'hid_button') {
+          steps.push({ action: t, delay: delayVal });
         }
       }
     });
