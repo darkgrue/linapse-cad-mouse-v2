@@ -7,6 +7,7 @@
 #include "StateMachine.h"
 #include "Controllers.h"
 #include "HidSerialCommand.h"
+#include "controllers/Despike.h"
 
 // Define the external instances required by the linker
 InputController     inputController;
@@ -687,6 +688,26 @@ void test_hid_report_drives_axes() {
     TEST_ASSERT_FLOAT_WITHIN(1e-4f, 6.0f, hidController.lastSentMotion_[5]);
 }
 
+// ── De-spike clamp ───────────────────────────────────────────────────────────
+void test_despike_passes_sustained_motion() {
+    float prev[6] = {0,0,0,0,0,0};
+    float m[6]    = {10,10,10,10,10,10};   // delta below threshold
+    despikeAxes(m, prev, 40.0f, 1.0f);
+    for (int i = 0; i < 6; i++) TEST_ASSERT_FLOAT_WITHIN(0.001f, 10.0f, m[i]);
+}
+void test_despike_clamps_spike_on_all_axes() {
+    float prev[6] = {0,0,0,0,0,0};
+    float m[6]    = {200,-200,200,-200,200,-200};  // huge spike, every axis
+    despikeAxes(m, prev, 40.0f, 1.0f);
+    for (int i = 0; i < 6; i++) TEST_ASSERT_TRUE(fabsf(m[i]) <= 40.0f + 0.001f);
+}
+void test_despike_strength_zero_is_noop() {
+    float prev[6] = {0,0,0,0,0,0};
+    float m[6]    = {500,0,0,0,0,0};
+    despikeAxes(m, prev, 40.0f, 0.0f);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 500.0f, m[0]);
+}
+
 // ── Main Entry Point ─────────────────────────────────────────────────────────
 
 #ifdef ARDUINO
@@ -733,6 +754,9 @@ void setup() {
     RUN_TEST(test_service_hid_still_handled_after_extraction);
     RUN_TEST(test_non_hid_command_not_handled);
     RUN_TEST(test_hid_report_drives_axes);
+    RUN_TEST(test_despike_passes_sustained_motion);
+    RUN_TEST(test_despike_clamps_spike_on_all_axes);
+    RUN_TEST(test_despike_strength_zero_is_noop);
 
     UNITY_END();
 }
@@ -783,6 +807,9 @@ int main(int argc, char **argv) {
     RUN_TEST(test_service_hid_still_handled_after_extraction);
     RUN_TEST(test_non_hid_command_not_handled);
     RUN_TEST(test_hid_report_drives_axes);
+    RUN_TEST(test_despike_passes_sustained_motion);
+    RUN_TEST(test_despike_clamps_spike_on_all_axes);
+    RUN_TEST(test_despike_strength_zero_is_noop);
 
     return UNITY_END();
 }
