@@ -121,7 +121,8 @@ void handleConfigCommand(const String& args) {
     snprintf(buf, sizeof(buf),
              "{\"brightness\":%d,\"color\":\"%06lX\",\"effect\":\"%s\","
              "\"dead_t\":%.2f,\"dead_r\":%.2f,\"kalman_q\":%.3f,\"kalman_r\":%.3f,\"exp\":%.2f,"
-             "\"tap_sens\":%.2f,\"invert_tap_z\":%d,\"spherical\":%d,\"spring_head\":%d}\n",
+             "\"tap_sens\":%.2f,\"invert_tap_z\":%d,\"spherical\":%d,\"spring_head\":%d,"
+             "\"despike_enabled\":%d,\"despike_threshold\":%.2f,\"despike_strength\":%.2f}\n",
              ledConfig.brightness, (unsigned long)ledConfig.idleColor,
              effectName(ledConfig.effect),
              sensConfig.deadT, sensConfig.deadR,
@@ -130,7 +131,10 @@ void handleConfigCommand(const String& args) {
              sensConfig.tapThreshold,
              sensConfig.invertTapZ ? 1 : 0,
              sensConfig.sphericalMode ? 1 : 0,
-             sensConfig.springHead ? 1 : 0);
+             sensConfig.springHead ? 1 : 0,
+             sensConfig.despikeEnabled ? 1 : 0,
+             sensConfig.despikeThreshold,
+             sensConfig.despikeStrength);
     Serial.print(buf);
     return;
   }
@@ -145,17 +149,21 @@ void handleConfigCommand(const String& args) {
 
 void handleSensCommand(const String& args) {
   if (args == "get") {
-    char buf[200];
+    char buf[280];
     snprintf(buf, sizeof(buf),
              "{\"dead_t\":%.2f,\"dead_r\":%.2f,\"kalman_q\":%.3f,\"kalman_r\":%.3f,\"exp\":%.2f,"
-             "\"tap_sens\":%.2f,\"invert_tap_z\":%d,\"spherical\":%d,\"spring_head\":%d}\n",
+             "\"tap_sens\":%.2f,\"invert_tap_z\":%d,\"spherical\":%d,\"spring_head\":%d,"
+             "\"despike_enabled\":%d,\"despike_threshold\":%.2f,\"despike_strength\":%.2f}\n",
              sensConfig.deadT, sensConfig.deadR,
              sensConfig.kalmanQ, sensConfig.kalmanR,
              sensConfig.sensitivityExp,
              sensConfig.tapThreshold,
              sensConfig.invertTapZ ? 1 : 0,
              sensConfig.sphericalMode ? 1 : 0,
-             sensConfig.springHead ? 1 : 0);
+             sensConfig.springHead ? 1 : 0,
+             sensConfig.despikeEnabled ? 1 : 0,
+             sensConfig.despikeThreshold,
+             sensConfig.despikeStrength);
     Serial.print(buf);
     return;
   }
@@ -180,7 +188,10 @@ void handleSensCommand(const String& args) {
     else if (param == "invert_tap_z") sensConfig.invertTapZ = (val > 0.5f);
     else if (param == "spherical")    sensConfig.sphericalMode = (val > 0.5f);
     else if (param == "spring_head")  sensConfig.springHead = (val > 0.5f);
-    else { Serial.println("ERR unknown param: dead_t|dead_r|kalman_q|kalman_r|exp|tap_sens|invert_tap_z|spherical|spring_head"); return; }
+    else if (param == "despike_enabled")   sensConfig.despikeEnabled   = (val > 0.5f);
+    else if (param == "despike_threshold") sensConfig.despikeThreshold = val;
+    else if (param == "despike_strength")  sensConfig.despikeStrength  = val;
+    else { Serial.println("ERR unknown sens param"); return; }
     sensConfig.save();
     Serial.println("OK");
     return;
