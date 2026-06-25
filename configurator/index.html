@@ -1184,6 +1184,25 @@ input[type=range]::-webkit-slider-thumb {
       </div>
     </div>
 
+    <!-- De-spike auto-calibration -->
+    <div id="despikeCalOverlay" class="wizard-overlay" style="display:none">
+      <div class="wizard-card">
+        <div class="wizard-header">
+          <div class="wizard-title">De-spike Calibration</div>
+          <div class="wizard-step-indicator" id="despikeCalStep">0/3</div>
+        </div>
+        <div class="wizard-body">
+          <canvas id="despikeCalCanvas" width="460" height="180" style="width:100%;height:180px;background:#0d0d0d;border:1px solid var(--border);border-radius:4px;display:block"></canvas>
+          <div class="wizard-instruction" id="despikeCalInstruction" style="margin-top:10px">Auto-tune the tap de-spike filter.</div>
+          <div id="despikeCalDetails" style="font-size:12px;color:var(--text3);margin-top:6px;line-height:1.4">Hold still and tap, then move without tapping. The wizard sets the threshold between your motion and your tap spikes. Watch the dot — taps make it jump.</div>
+        </div>
+        <div class="wizard-footer">
+          <button class="wizard-btn wizard-btn-secondary" onclick="despikeCalCancel()">Cancel</button>
+          <button class="wizard-btn wizard-btn-primary" id="despikeCalNext" onclick="despikeCalNext()">Start</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Controller preview (shown only in Controller mode) -->
     <div id="controllerViewport" style="flex:1;position:relative;background:#0d0d0d;overflow:hidden;min-width:0;display:none">
       <canvas id="controllerCanvas" style="display:block;width:100%;height:100%"></canvas>
@@ -3161,6 +3180,9 @@ function connectWS() {
         if (typeof wizardRecording !== 'undefined' && wizardRecording) {
           handleWizardMotion(vals);
         }
+        if (typeof despikeCalRecording !== 'undefined' && despikeCalRecording) {
+          handleDespikeCalMotion(vals);
+        }
       }
       return;
     }
@@ -4248,9 +4270,134 @@ function onDespikeEnabled(el) {
   sendCmd(`sens set despike_enabled ${on ? 1 : 0}`);
 }
 
-// Full wizard implemented in a later task; stub keeps the Calibrate button safe.
+// ── De-spike auto-calibration (Tap-tab "Calibrate…") ─────────────────────────
+// Measures your tap-spike magnitude vs your normal-motion magnitude (de-spike
+// temporarily off), then sets the threshold between them. The 2D dot shows the
+// live motion so you can see the jitter being calibrated. Sensitivity has its
+// own wizard ("Run Calibration Wizard"); this one targets the de-spike filter.
+let despikeCalPhase = 0;
+let despikeCalRecording = false;
+let despikeCal = { tapPeak: 0, movePeak: 0, result: 0 };
+let despikeCalPrev = null;
+let despikeCalSnapshot = null;
+let despikeCalDot = { x: 0, y: 0 };
+let despikeCalRaf = null;
+
 function openCalibrateWizard() {
-  alert('Calibration wizard coming soon.');
+  despikeCalSnapshot = {
+    enabled: document.getElementById('despikeEnabled').classList.contains('on'),
+    threshold: parseFloat(document.getElementById('despikeThreshold').value),
+    strength: parseFloat(document.getElementById('despikeStrength').value),
+  };
+  despikeCal = { tapPeak: 0, movePeak: 0, result: 0 };
+  despikeCalPrev = null;
+  sendCmd('sens set despike_enabled 0');   // measure the raw signal
+  document.getElementById('despikeCalOverlay').style.display = 'flex';
+  despikeCalStartDraw();
+  despikeCalSetPhase(0);
+}
+
+function despikeCalSetPhase(p) {
+  despikeCalPhase = p;
+  despikeCalRecording = false;
+  const t = document.getElementById('despikeCalInstruction');
+  const d = document.getElementById('despikeCalDetails');
+  const n = document.getElementById('despikeCalNext');
+  document.getElementById('despikeCalStep').textContent = p + '/3';
+  if (p === 0) {
+    t.textContent = 'Auto-tune the tap de-spike filter.';
+    d.textContent = "Hold still and tap, then move without tapping. Watch the dot — taps make it jump.";
+    n.textContent = 'Start';
+  } else if (p === 1) {
+    t.textContent = 'Hold still and tap a few times.';
+    d.textContent = 'Keep the puck still and tap the top/sides. Measuring the spikes…';
+    despikeCal.tapPeak = 0; despikeCalPrev = null; despikeCalRecording = true;
+    n.textContent = 'Next';
+  } else if (p === 2) {
+    t.textContent = 'Now move diagonally — do NOT tap.';
+    d.textContent = 'Make your normal diagonal motions without tapping. Measuring…';
+    despikeCal.movePeak = 0; despikeCalPrev = null; despikeCalRecording = true;
+    n.textContent = 'Finish';
+  } else if (p === 3) {
+    despikeCalRecording = false;
+    let thr = Math.round(Math.min(200, Math.max(5, despikeCal.movePeak * 1.3)));
+    if (despikeCal.tapPeak > 0 && thr > despikeCal.tapPeak * 0.9) {
+      thr = Math.round(Math.max(5, despikeCal.tapPeak * 0.9));
+    }
+    despikeCal.result = thr;
+    onDespikeThreshold(thr);
+    onDespikeStrength(100);
+    sendCmd('sens set despike_enabled 1');
+    document.getElementById('despikeEnabled').classList.add('on');
+    const f = document.getElementById('despikeFields');
+    if (f) { f.style.opacity = '1'; f.style.pointerEvents = ''; }
+    t.textContent = 'Done.';
+    d.innerHTML = `Motion peak <strong>${despikeCal.movePeak.toFixed(0)}</strong> · tap peak <strong>${despikeCal.tapPeak.toFixed(0)}</strong>.<br>Set <strong>Threshold ${thr}</strong>, Strength 100%. Move + tap to check — no jolt now.`;
+    n.textContent = 'Save';
+  }
+}
+
+function despikeCalNext() {
+  if (despikeCalPhase < 3) despikeCalSetPhase(despikeCalPhase + 1);
+  else despikeCalClose();   // already applied
+}
+
+function despikeCalCancel() {
+  const s = despikeCalSnapshot;
+  if (s) {
+    onDespikeThreshold(s.threshold);
+    onDespikeStrength(s.strength);
+    sendCmd('sens set despike_enabled ' + (s.enabled ? 1 : 0));
+    document.getElementById('despikeEnabled').classList.toggle('on', s.enabled);
+  }
+  despikeCalClose();
+}
+
+function despikeCalClose() {
+  despikeCalRecording = false;
+  if (despikeCalRaf) { cancelAnimationFrame(despikeCalRaf); despikeCalRaf = null; }
+  document.getElementById('despikeCalOverlay').style.display = 'none';
+  despikeCalPhase = 0;
+}
+
+function handleDespikeCalMotion(vals) {
+  if (!despikeCalPrev) { despikeCalPrev = vals.slice(); return; }
+  let peak = 0;
+  for (let i = 0; i < 6; i++) {
+    const dd = Math.abs(vals[i] - despikeCalPrev[i]);
+    if (dd > peak) peak = dd;
+  }
+  despikeCalPrev = vals.slice();
+  if (despikeCalPhase === 1 && peak > despikeCal.tapPeak) despikeCal.tapPeak = peak;
+  if (despikeCalPhase === 2 && peak > despikeCal.movePeak) despikeCal.movePeak = peak;
+  // live dot from tilt (rx=vals[3], ry=vals[4])
+  despikeCalDot.x = Math.max(-1, Math.min(1, (vals[4] || 0) / 350));
+  despikeCalDot.y = Math.max(-1, Math.min(1, (vals[3] || 0) / 350));
+}
+
+function despikeCalStartDraw() {
+  const cv = document.getElementById('despikeCalCanvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const trail = [];
+  function frame() {
+    const w = cv.width, h = cv.height;
+    ctx.fillStyle = '#0d0d0d'; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.beginPath(); ctx.moveTo(w/2,0); ctx.lineTo(w/2,h); ctx.moveTo(0,h/2); ctx.lineTo(w,h/2); ctx.stroke();
+    const px = w/2 + despikeCalDot.x * (w/2 - 12);
+    const py = h/2 - despikeCalDot.y * (h/2 - 12);
+    trail.push({x:px,y:py}); if (trail.length > 30) trail.shift();
+    for (let i = 0; i < trail.length; i++) {
+      const a = i / trail.length;
+      ctx.fillStyle = `rgba(0,255,136,${a*0.5})`;
+      ctx.beginPath(); ctx.arc(trail[i].x, trail[i].y, 2, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.fillStyle = '#00ff88';
+    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.fill();
+    despikeCalRaf = requestAnimationFrame(frame);
+  }
+  frame();
 }
 
 function onSensChange(param, sliderId, valId) {
