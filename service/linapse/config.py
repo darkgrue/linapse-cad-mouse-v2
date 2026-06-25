@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import time
 import asyncio
 from pathlib import Path
@@ -28,6 +29,7 @@ def switch_mode(target_mode):
             print(f"[mode] target mode '{target_mode}' does not exist")
             return
 
+        mode_changed = actions.get("current_mode") != target_mode
         actions["current_mode"] = target_mode
 
         try:
@@ -61,6 +63,16 @@ def switch_mode(target_mode):
         asyncio.run_coroutine_threadsafe(queue_cmds(), state.loop)
 
     state.broadcast_from_thread(f"MODE:{target_mode}")
+    # Toast only on a real mode change — never per motion frame. notify-send is
+    # best-effort and absent on Windows/macOS and headless Linux.
+    if mode_changed:
+        try:
+            subprocess.Popen(
+                ["notify-send", "-t", "2000", "-u", "low", "CAD Mouse", f"Mode: {target_mode}"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+        except OSError:
+            pass
 
 def load_actions():
     with state.config_lock:

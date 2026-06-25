@@ -416,6 +416,8 @@ def reset_test_state(page, mock_serial, temp_actions_path, target_tab="Motion"):
         page.locator(".sens-tab", has_text="Axes").click()
     elif target_tab == "General":
         page.locator(".sens-tab", has_text="General").click()
+    elif target_tab == "Invert":
+        page.locator(".sens-tab", has_text="Invert").click()
 
 
 # ==================== VIEWPORT MOTION TESTS ====================
@@ -445,7 +447,7 @@ def test_viewport_motion_x_normal(benchy_env):
 
 def test_viewport_motion_x_inverted(benchy_env):
     page, mock_serial, temp_actions_path, tmp_path = benchy_env
-    reset_test_state(page, mock_serial, temp_actions_path, target_tab="General")
+    reset_test_state(page, mock_serial, temp_actions_path, target_tab="Invert")
 
     # Toggle inversion
     page.click("#invX")
@@ -495,7 +497,7 @@ def test_viewport_motion_z_normal(benchy_env):
 
 def test_viewport_motion_z_inverted(benchy_env):
     page, mock_serial, temp_actions_path, tmp_path = benchy_env
-    reset_test_state(page, mock_serial, temp_actions_path, target_tab="General")
+    reset_test_state(page, mock_serial, temp_actions_path, target_tab="Invert")
 
     # Toggle inversion
     page.click("#invZ")
@@ -545,7 +547,7 @@ def test_viewport_motion_rx_normal(benchy_env):
 
 def test_viewport_motion_rx_inverted(benchy_env):
     page, mock_serial, temp_actions_path, tmp_path = benchy_env
-    reset_test_state(page, mock_serial, temp_actions_path, target_tab="General")
+    reset_test_state(page, mock_serial, temp_actions_path, target_tab="Invert")
 
     # Toggle inversion
     page.click("#invRx")
@@ -595,7 +597,7 @@ def test_viewport_motion_ry_normal(benchy_env):
 
 def test_viewport_motion_ry_inverted(benchy_env):
     page, mock_serial, temp_actions_path, tmp_path = benchy_env
-    reset_test_state(page, mock_serial, temp_actions_path, target_tab="General")
+    reset_test_state(page, mock_serial, temp_actions_path, target_tab="Invert")
 
     # Toggle inversion
     page.click("#invRy")
@@ -645,7 +647,7 @@ def test_viewport_motion_rz_normal(benchy_env):
 
 def test_viewport_motion_rz_inverted(benchy_env):
     page, mock_serial, temp_actions_path, tmp_path = benchy_env
-    reset_test_state(page, mock_serial, temp_actions_path, target_tab="General")
+    reset_test_state(page, mock_serial, temp_actions_path, target_tab="Invert")
 
     # Toggle inversion
     page.click("#invRz")
@@ -672,7 +674,7 @@ def test_viewport_motion_rz_inverted(benchy_env):
 
 def test_viewport_motion_y_inversion(benchy_env):
     page, mock_serial, temp_actions_path, tmp_path = benchy_env
-    reset_test_state(page, mock_serial, temp_actions_path, target_tab="General")
+    reset_test_state(page, mock_serial, temp_actions_path, target_tab="Invert")
 
     # Toggle Y Inversion
     page.click("#invY")
@@ -869,7 +871,7 @@ def test_sensitivity_rz_neg(benchy_env):
 
 def verify_inversion_scaling(benchy_env, name, selector, raw_packet, axis_idx, normal_val):
     page, mock_serial, temp_actions_path, tmp_path = benchy_env
-    reset_test_state(page, mock_serial, temp_actions_path, target_tab="General")
+    reset_test_state(page, mock_serial, temp_actions_path, target_tab="Invert")
 
     # Enable inversion in UI
     page.click(selector)

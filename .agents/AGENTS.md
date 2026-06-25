@@ -6,6 +6,9 @@ All AI agents working on this project MUST follow these guidelines without excep
 
 The current version of this project is stored in the `VERSION` file at the repository root (using `MAJOR.MINOR.PATCH` Semantic Versioning).
 You MUST only increment the version number and sync it when the user explicitly requests a push or a release. Do not update the version for minor intermediate changes during a session unless requested.
+
+**One version number per release, until it actually publishes.** Bumping the version and pushing does NOT mean the version is released — it is released only when the deploy succeeds (tag/GitHub release published, PPA uploaded). If the deploy fails, you are still trying to ship that same number: diagnose, fix, and fold the fix into the SAME version's `CHANGELOG.md` section — do NOT increment. Incrementing to fix a not-yet-published release just buries a broken version in history and desyncs `VERSION`/`debian/changelog`/tags. Move to the next version only after the current one has published, or when the user starts genuinely new work. See **Release Procedure**.
+
 When doing a release/push-time version increment:
 1. **Read the current version** from the [VERSION](file:///home/spikeon/Dev/linapse-cad-mouse-v2/VERSION) file.
 2. **Increment the version number** based on your changes:
@@ -33,6 +36,26 @@ When performing a push/release version increment, you MUST update [CHANGELOG.md]
    - `Fixed` for any bug fixes.
    - `Security` in case of vulnerabilities addressed.
 3. Ensure the date of the change is recorded next to the version header (e.g., `[2.0.1] - 2026-06-18`).
+
+## Release Procedure
+
+A release is NOT finished when you push — it is finished when the deploy succeeds and the announcement is out. Do NOT run this for intermediate/WIP commits; same trigger as the version bump. Run the steps in order:
+
+1. **Bump the version** — see **Versioning System**.
+2. **Update the changelog** — see **Changelog Updates**.
+3. **Commit and push.**
+4. **Monitor the deploy to completion.** Watch the CI/CD run for the pushed commit (e.g. `env -u GITHUB_TOKEN -u GH_TOKEN gh run watch`, or poll with `gh run view`) all the way through — including the `release` job that publishes the GitHub release/tag and the PPA upload. A green build/test job is NOT enough; the release must actually publish.
+5. **On failure: fix and loop, under the SAME version number.** Diagnose the failure, apply the fix, and record it in `CHANGELOG.md` under the **same** version's section (a `Fixed` entry). Do NOT increment the version to fix a release that has not published yet (see **Versioning System**). Commit, push, and return to step 4. Repeat until the deploy succeeds.
+6. **Announce only after the release has published.** Once — and only once — the deploy succeeds, post the Discord announcement (below). A failed or in-flight deploy is NOT a release; never announce one.
+
+### Discord announcement
+
+After a successful release (step 6 above), you MUST post an update to the **#linapse-cad-mouse-mk2** channel on Discord:
+1. **Channel**: `#linapse-cad-mouse-mk2`.
+2. **Mechanism**: use the connected Discord MCP (wired through the Chrome integration).
+3. **Content**: the released version number, plus a short summary of the **non-sensitive** changelog highlights for that version.
+4. **Sensitive-content filter** — NEVER include in the post: real USB `VID`/`PID` values, anything originating from the `local-build` branch, auth tokens/credentials, internal infrastructure paths, or unreleased/embargoed details. When in doubt, leave it out.
+5. **Confirm before posting**: posting to Discord publishes outward. Show the drafted message and get explicit confirmation before sending — do not auto-post.
 
 ## Git Token Environment Variable
 
@@ -67,6 +90,13 @@ To build for the device:
 ~/.platformio/penv/bin/pio run
 ```
 
+## Running Python Tests (Local)
+
+Run the Python test suite locally with [scripts/test.sh](file:///home/spikeon/Dev/linapse-cad-mouse-v2/scripts/test.sh), NOT a bare `pytest`. The suite drives real OS input on Linux (emulated mouse/keys via `ydotool`, mode toasts via `notify-send`, udev/`/etc` writes in installer tests); running it on the host moves your cursor and spams notifications. `scripts/test.sh` runs everything inside a throwaway container (`Dockerfile.test`) so it can't touch the host desktop. Args pass through to pytest, relative to `service/` (e.g. `scripts/test.sh test_mode_notify.py -k change`).
+
+- It auto-detects when it is already inside a container (via `/.dockerenv`) or in CI and runs pytest directly — it must NEVER spawn a container inside CI (which already runs pytest in a container). Do not wire `scripts/test.sh` into the CI workflow; CI calls pytest directly.
+- `LINAPSE_TEST_NO_CONTAINER=1` runs on the host. Even then, `service/conftest.py` has an autouse net that stubs `ydotool`/`notify-send`, but full isolation needs the container.
+
 ## CI Workflow Step Name Constraint
 
 `service/test_installer_config.py::TestInstallerConfig::test_workflow_yaml_valid` asserts that specific step names exist in `.github/workflows/multi-distro-test.yml`. If you add, rename, or remove CI steps, you MUST update this test or it will fail. Read the test before touching the workflow file.
@@ -82,6 +112,8 @@ When fixing CI/CD errors or failures:
 2. **Wait and Verify**: Wait for the CI/CD run to complete and verify the results.
 3. **Retry on Failure**: If the run fails, analyze the new failures, adjust your implementation, and repeat the commit-push-wait loop.
 4. **Iterate to Success**: Continue this process until the CI/CD pipeline succeeds. If appropriate, recommend or utilize the `/goal` command to ensure thorough, multi-turn tracking.
+
+When the failing pipeline is a **release** (the version was already bumped), follow **Release Procedure**: keep the same version number, append each fix to that version's `CHANGELOG.md` section, and do not announce on Discord until the deploy publishes.
 
 ## Lighting Mode Modification Requirement
 

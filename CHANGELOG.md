@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.24.0] - 2026-06-24
+
+### Added
+- **Sleep mode.** The puck now enters a low-power sleep state after a configurable idle timeout, turning off the LEDs and stopping motion output. It wakes on a button press *or* on raw sensor motion exceeding a configurable threshold — fixing the Linux wake-from-sleep bug where the original firmware only woke on button events. Idle timeout and wake sensitivity are configurable in the new **Device** tab.
+- **Mode-switch desktop notification.** Switching modes now raises a brief `notify-send` desktop toast (`Mode: <name>`) on Linux so the active mode is visible without opening the configurator.
+
+### Changed
+- **Motion panel reorganised.** Axis inversions moved out of Motion → General into a dedicated **Invert** sub-tab, and device-level settings (sleep mode) moved to a new **Device** tab.
+
 ## [2.23.0] - 2026-06-24
 
 ### Added
