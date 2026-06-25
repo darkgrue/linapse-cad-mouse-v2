@@ -1,6 +1,9 @@
 """Tests for the in-tree browser CAD bridge."""
 
+import os
 from pathlib import Path
+
+import pytest
 
 SERVICE = Path(__file__).parent
 
@@ -28,6 +31,7 @@ def test_controller_ignores_button_events():
     assert "continue" in source
 
 
+@pytest.mark.skipif(not hasattr(os, "getuid"), reason="bridge is Linux-only (spnav socket path uses os.getuid)")
 def test_patch_app_installs_linapse_ws_handler():
     """patch_app must put the Linapse nlproxy (with reconnect) on the WS '/'
     route, and leave the HTTP info/homepage routes intact."""
