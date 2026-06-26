@@ -80,6 +80,10 @@ const float EFFECT_SWIRL_SPEED    = 1.0f;    // revolutions/sec
 const float EFFECT_REACTIVE_RISE  = 6.0f;    // brightness rise rate (0..1)/sec on motion
 const float EFFECT_REACTIVE_FALL  = 0.4f;    // brightness fall rate (0..1)/sec at rest
 const float EFFECT_REACTIVE_DIM   = 0.0f;    // minimum reactive brightness factor
+// Reactive treats anything above this normalized magnitude as "moving". Without
+// it, post-Kalman float residue never settles to exactly 0.0, so reactive pins
+// full-bright at idle. ~0.02 ≈ 7 raw/axis — below intentional motion, above noise.
+const float EFFECT_REACTIVE_THRESHOLD = 0.02f;
 
 // FSM timing
 const long IDLE_SLEEP_TIMEOUT_MS = -1;

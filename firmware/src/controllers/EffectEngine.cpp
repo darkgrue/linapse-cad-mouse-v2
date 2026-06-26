@@ -58,7 +58,7 @@ void EffectEngine::doReactive(unsigned long now, float motionMag) {
   float dt = (lastMs_ == 0) ? 0.0f : (now - lastMs_) / 1000.0f;
   dt = (dt > 0.1f) ? 0.1f : dt;  // cap to avoid large jumps on first frame
 
-  float target = (motionMag > 0.0f) ? 1.0f : Config::EFFECT_REACTIVE_DIM;
+  float target = (motionMag > Config::EFFECT_REACTIVE_THRESHOLD) ? 1.0f : Config::EFFECT_REACTIVE_DIM;
   float rate   = (motionMag > 0.0f) ? Config::EFFECT_REACTIVE_RISE : Config::EFFECT_REACTIVE_FALL;
   reactiveLevel_ += (target - reactiveLevel_) * rate * dt;
   if (reactiveLevel_ < Config::EFFECT_REACTIVE_DIM) reactiveLevel_ = Config::EFFECT_REACTIVE_DIM;

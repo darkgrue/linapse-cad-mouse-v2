@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.26.4] - 2026-06-25
+
+### Fixed
+- **Runaway scroll / held key at idle.** A spurious or corrupt HID button report could start an auto-scroll (or hold a key) that only stopped on the next real button event — a single noisy report would otherwise scroll/repeat forever. Button holds now self-recover after a safety window (`MAX_HOLD_SECONDS`) if the release event is missed.
+- **Reactive LED stuck full-bright.** The reactive effect treated any non-zero motion magnitude as "moving"; post-Kalman float residue never settles to exactly 0.0, so it pinned bright at idle. Added a small motion dead-band (`EFFECT_REACTIVE_THRESHOLD`) so it dims at rest and still lights on real motion. *(firmware)*
+- **Configurator invented version numbers.** On WebSocket disconnect the UI displayed hardcoded placeholder versions (`2.9.0`, `2.21.2`, `2.10.5`), which looked like multiple service versions flapping. It now keeps the last real version instead of fabricating one.
+
 ## [2.26.3] - 2026-06-25
 
 ### Fixed

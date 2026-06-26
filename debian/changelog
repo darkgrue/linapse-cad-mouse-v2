@@ -1,3 +1,15 @@
+linapse-cad-mouse (2.26.4-1) unstable; urgency=low
+
+  * Fix runaway scroll / stuck held key: a spurious HID button report could
+    auto-scroll or hold a key forever until the next real button event.
+    Holds now self-recover after a safety window if the release is missed.
+  * Fix reactive LED pinned full-bright at idle by adding a small motion
+    dead-band (post-Kalman float residue never reaches exactly 0). (firmware)
+  * Stop the configurator from displaying hardcoded placeholder version
+    numbers on disconnect (looked like multiple services flapping).
+
+ -- Michael Flynn <spikeon@gmail.com>  Wed, 25 Jun 2026 10:30:00 -0400
+
 linapse-cad-mouse (2.26.3-1) unstable; urgency=low
 
   * Fix browser bridge (OnShape / SketchUp Web): the WS route patch was a

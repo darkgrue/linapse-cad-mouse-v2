@@ -3141,7 +3141,8 @@ function connectWS() {
     setConnected(false);
     setStatus('linapse-service not running', 'err');
     wsReconnectTimer = setTimeout(connectWS, 3000);
-    handleVersionInfo({ service: '2.9.0', firmware: 'unknown' });
+    // Don't fabricate a version on disconnect — keep the last real one so the
+    // footer doesn't flap between a fake number and the true service version.
   };
 
   ws.onerror = () => {};  // onclose fires after onerror
@@ -5428,12 +5429,12 @@ function handleFlashMessage(msg) {
   }
 }
 
-let serviceVersion = '2.21.2';
+let serviceVersion = '—';
 let firmwareVersion = 'unknown';
 let wsConnected = false;
 
 function handleVersionInfo(info) {
-  serviceVersion = info.service || '2.10.5';
+  serviceVersion = info.service || serviceVersion;
   firmwareVersion = info.firmware || 'unknown';
   updateConnectionState();
   

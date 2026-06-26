@@ -11,6 +11,12 @@ from .emulation import dispatch, dispatch_hold, is_holdable
 BUTTON_REPORT_ID = 3
 CHORD_WINDOW = 0.05
 SCROLL_INTERVAL = 0.05
+# Safety: button releases come from the puck as edge events. A spurious/corrupt
+# HID report (line noise, firmware glitch) can set a button bit with no matching
+# release, which would otherwise auto-scroll or hold a key FOREVER. Cap any
+# single press-and-hold so a missed release self-recovers instead of spamming.
+MAX_HOLD_SECONDS = 3.0
+_hold_watchdogs = {}  # btn -> Timer that force-releases a stuck hold
 
 class ButtonClickState:
     def __init__(self, btn):
@@ -35,8 +41,25 @@ class ChordClickState:
 _chord_state = ChordClickState()
 _chord_held = False
 
+def _cancel_hold_watchdog(btn):
+    t = _hold_watchdogs.pop(btn, None)
+    if t is not None:
+        t.cancel()
+
+
+def _force_release_hold(btn):
+    # Safety net: a hold that outlived MAX_HOLD_SECONDS without a release event
+    # is stuck (missed/phantom release). Release it so the key/button doesn't
+    # stay down (and autorepeat) forever.
+    act = _active_holds.pop(btn, None)
+    _hold_watchdogs.pop(btn, None)
+    if act is not None:
+        dispatch_hold(act, False)
+
+
 def _release_all_holds():
     for b in list(_active_holds.keys()):
+        _cancel_hold_watchdog(b)
         act = _active_holds.pop(b, None)
         if act is not None:
             dispatch_hold(act, False)
@@ -58,7 +81,14 @@ def reset_click_states():
     _chord_held = False
 
 def _scroll_loop(btn, stop_event, actions):
+    deadline = time.monotonic() + MAX_HOLD_SECONDS
     while not stop_event.is_set():
+        if time.monotonic() > deadline:
+            # No release within the safety window — almost certainly a stuck/
+            # phantom button bit. Stop and drop our slot so the next real
+            # press still works.
+            _scroll_threads.pop(btn, None)
+            return
         mode_buttons = get_active_mode_config(actions, "buttons")
         act = mode_buttons.get(f"{btn}:1")
         if not act:
@@ -90,6 +120,12 @@ def _on_single(btn, actions):
             # Released during the chord window — don't leave it stuck.
             _active_holds.pop(btn, None)
             dispatch_hold(act, False)
+        else:
+            # Arm a safety release in case the physical release event is missed.
+            wd = threading.Timer(MAX_HOLD_SECONDS, _force_release_hold, args=[btn])
+            wd.daemon = True
+            _hold_watchdogs[btn] = wd
+            wd.start()
     else:
         dispatch(act)
 
@@ -197,6 +233,7 @@ def _on_release(btn, actions=None):
         _, stop_event = _scroll_threads.pop(btn)
         stop_event.set()
 
+    _cancel_hold_watchdog(btn)
     held_act = _active_holds.pop(btn, None)
     if held_act is not None:
         dispatch_hold(held_act, False)
