@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.26.5] - 2026-06-25
+
+### Fixed
+- **Stuck key/scroll orphaned in ydotoold.** A spurious button-down report (no matching release) could press a holdable key down; if the service was then killed or restarted, the key stayed held in ydotoold (a separate daemon that outlives the service) and autorepeated forever. The service now releases all held inputs on shutdown, and on startup sweeps every configured holdable key to clear anything a prior crash left down. Complements the press-hold safety watchdog from 2.26.4.
+
 ## [2.26.4] - 2026-06-25
 
 ### Fixed

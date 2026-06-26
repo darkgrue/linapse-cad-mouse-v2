@@ -65,6 +65,35 @@ def _release_all_holds():
             dispatch_hold(act, False)
 
 
+def release_all_inputs(actions=None):
+    """Release every key/scroll the service might be holding down. Called on
+    service shutdown (so a graceful restart never strands a key in ydotoold,
+    which outlives this process) and on startup (best-effort clear of a key a
+    previous crash/SIGKILL left down). Releasing an un-pressed key is a no-op,
+    so the startup sweep over configured holdables is safe."""
+    # Stop any running auto-scroll loops.
+    for btn in list(_scroll_threads.keys()):
+        pair = _scroll_threads.pop(btn, None)
+        if pair is not None:
+            pair[1].set()
+    # Release in-process tracked holds.
+    _release_all_holds()
+    for btn in list(_hold_watchdogs.keys()):
+        _cancel_hold_watchdog(btn)
+    # Best-effort: lift any holdable key configured on any mode's buttons, in
+    # case a prior process died mid-hold and left it down in ydotoold.
+    if actions:
+        seen = []
+        for mode in (actions.get("modes") or {}).values():
+            for act in (mode.get("buttons") or {}).values():
+                if isinstance(act, dict) and is_holdable(act) and act not in seen:
+                    seen.append(act)
+                    try:
+                        dispatch_hold(act, False)
+                    except Exception as e:
+                        print(f"[hid] startup release error: {e}")
+
+
 def reset_click_states():
     global _chord_held
     for state_obj in _click_states.values():
@@ -275,6 +304,12 @@ def hid_thread(actions_ref):
     if sys.platform in ("win32", "darwin"):
         print("[hid] disabled on Windows/macOS")
         return
+    # Clear any key a previous crash/kill may have left held down in ydotoold
+    # (it outlives this process). Releasing an un-pressed key is a no-op.
+    try:
+        release_all_inputs(actions_ref[0])
+    except Exception as e:
+        print(f"[hid] startup input cleanup error: {e}")
     while True:
         candidates = (
             glob.glob("/dev/input/by-id/usb-*CAD_Mouse*-if02-hidraw") +

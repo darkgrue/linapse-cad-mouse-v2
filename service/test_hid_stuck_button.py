@@ -41,6 +41,37 @@ def test_scroll_loop_self_terminates_without_release(monkeypatch):
     assert len(calls) < 100
 
 
+def test_release_all_inputs_clears_orphans(monkeypatch):
+    """On shutdown/startup, release_all_inputs must stop scroll loops, drop
+    tracked holds, and lift every holdable key configured on any mode — so a
+    key orphaned in ydotoold by a prior crash/kill gets released."""
+    releases = []
+    monkeypatch.setattr(hid, "dispatch_hold", lambda act, down: releases.append((act, down)))
+
+    # A live tracked hold + a running scroll thread slot.
+    held = {"action": "key", "value": "x"}
+    hid._active_holds[0] = held
+    stop = threading.Event()
+    hid._scroll_threads[1] = (None, stop)
+
+    actions = {"modes": {
+        "Default": {"buttons": {"0": {"action": "key", "value": "x"}}},
+        "Mouse":   {"buttons": {"0": {"action": "key", "value": "up"},
+                                "chord:2": {"action": "mode", "value": "Default"}}},
+    }}
+    hid.release_all_inputs(actions)
+
+    assert stop.is_set(), "scroll loop not stopped"
+    assert 1 not in hid._scroll_threads
+    assert 0 not in hid._active_holds, "tracked hold not released"
+    # The configured holdable keys (x, up) were lifted; the mode-switch chord
+    # (not holdable) was skipped.
+    lifted = [a for a, down in releases if down is False]
+    assert {"action": "key", "value": "x"} in lifted
+    assert {"action": "key", "value": "up"} in lifted
+    assert all(a.get("action") != "mode" for a in lifted), "non-holdable swept"
+
+
 def test_hold_watchdog_force_releases(monkeypatch):
     """A stuck key/mouse hold must be force-released after the safety window."""
     released = []
