@@ -160,6 +160,34 @@ else
 fi
 
 
+# ── AppArmor userns profile (Ubuntu 24.04+) ──────────────────────────────────
+section "Installing AppArmor userns profile for the configurator"
+
+# Ubuntu 24.04+ denies unprivileged user namespaces to unconfined processes
+# (kernel.apparmor_restrict_unprivileged_userns=1), which aborts the Electron
+# configurator's Chromium sandbox when launched from the desktop shortcut.
+# Grant userns to the repo-local electron binary with a path-attached profile,
+# mirroring the profiles Ubuntu ships for chrome/code/etc. Attachment is by
+# path, so it survives npm reinstalls; re-run this installer if the repo moves.
+if [ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" = "1" ] \
+    && command -v apparmor_parser >/dev/null; then
+    APPARMOR_TMP="$(mktemp)"
+    sed -e "s|__REPO_DIR__|$REPO_ROOT|g" \
+        "$SCRIPT_DIR/apparmor/linapse-electron.apparmor" > "$APPARMOR_TMP"
+    if [ -f /etc/apparmor.d/linapse-electron ] && cmp -s "$APPARMOR_TMP" /etc/apparmor.d/linapse-electron; then
+        info "AppArmor profile already up to date."
+    else
+        sudo cp "$APPARMOR_TMP" /etc/apparmor.d/linapse-electron
+        sudo chmod 644 /etc/apparmor.d/linapse-electron
+        info "Installed AppArmor profile to /etc/apparmor.d/linapse-electron"
+        sudo apparmor_parser -r /etc/apparmor.d/linapse-electron 2>/dev/null || info "Warning: Could not load AppArmor profile (it will load on next boot)"
+    fi
+    rm -f "$APPARMOR_TMP"
+else
+    info "Unprivileged userns restriction not active on this system; skipping."
+fi
+
+
 # ── Browser extension ─────────────────────────────────────────────────────────
 section "Installing Linapse Browser Connector browser extension"
 

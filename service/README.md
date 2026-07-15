@@ -50,6 +50,7 @@ The installer:
 - Installs and enables two systemd user services: `ydotoold`, `linapse-service` (includes the browser CAD bridge on port 8181)
 - Configures `~/.config/environment.d/99-spnav.conf` so native apps find the user socket path automatically
 - Installs udev rules so services restart automatically on plug/unplug
+- On Ubuntu 24.04+ installs an AppArmor profile (`/etc/apparmor.d/linapse-electron`) so the Electron configurator's Chromium sandbox can create user namespaces (skipped on distros without the restriction)
 - Vendors the OnShape/SketchUp WebSocket protocol stack in `service/spacenav_ws/` (no external `spacenav-ws` PyPI package)
 
 After the installer finishes, install the Linapse Browser Connector browser extension:
