@@ -141,6 +141,7 @@ def serial_thread(actions_ref):
                     break
                 time.sleep(1)
             continue
+        ser = None
         try:
             ser = serial.Serial(port, SERIAL_BAUD, timeout=1.0)
             state.ser_holder[0] = ser
@@ -527,4 +528,9 @@ def serial_thread(actions_ref):
             state.ser_holder[0] = None
             set_firmware_version("unknown")
             print(f"[serial] {e} — retrying in 3s")
+            if ser:
+                try:
+                    ser.close()
+                except Exception:
+                    pass
             time.sleep(3)

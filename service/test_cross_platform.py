@@ -80,6 +80,51 @@ class TestCrossPlatform(unittest.TestCase):
         port = linapse_service.find_serial(None)
         self.assertEqual(port, "COM6")
 
+    def test_serial_closed_on_reconnect(self):
+        # pyserial's Windows backend has no __del__ (serialwin32.py comments it
+        # out), so an abandoned Serial object never releases its exclusive
+        # CreateFile handle unless .close() is called explicitly. If the
+        # connection loop drops a port without closing it, that COM port stays
+        # locked to every other application for the life of the process.
+        actions_ref = [{}]
+
+        import serial
+
+        mock_ser = MagicMock()
+        mock_ser.readline.side_effect = serial.SerialException("device error")
+
+        find_serial_calls = {"n": 0}
+        def fake_find_serial(_actions_ref):
+            find_serial_calls["n"] += 1
+            if find_serial_calls["n"] == 1:
+                return "COM3"
+            raise Exception("stop thread")
+
+        orig_find_serial = linapse_service.find_serial
+        orig_serial_class = linapse_service.serial.Serial
+        orig_ser_holder = linapse_service._ser_holder
+        orig_broadcast_from_thread = linapse_service._broadcast_from_thread
+
+        linapse_service.find_serial = fake_find_serial
+        linapse_service.serial.Serial = MagicMock(return_value=mock_ser)
+        linapse_service._ser_holder = [None]
+        linapse_service._broadcast_from_thread = MagicMock()
+
+        try:
+            with patch("linapse.serial_port.time.sleep"):
+                try:
+                    linapse_service.serial_thread(actions_ref)
+                except Exception as e:
+                    if str(e) != "stop thread":
+                        raise
+        finally:
+            linapse_service.find_serial = orig_find_serial
+            linapse_service.serial.Serial = orig_serial_class
+            linapse_service._ser_holder = orig_ser_holder
+            linapse_service._broadcast_from_thread = orig_broadcast_from_thread
+
+        mock_ser.close.assert_called_once()
+
     def test_pynput_keyboard_emulation(self):
         # Mock pynput controllers
         mock_kbd = MagicMock()
