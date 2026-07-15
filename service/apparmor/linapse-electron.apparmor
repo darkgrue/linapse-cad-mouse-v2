@@ -1,0 +1,19 @@
+# This profile allows everything and only exists to give the
+# application a name instead of having the label "unconfined"
+#
+# Ubuntu 24.04+ denies unprivileged user namespaces to unconfined processes
+# (kernel.apparmor_restrict_unprivileged_userns=1), which breaks the Chromium
+# sandbox of the repo-local Electron binary used by the Linapse Configurator.
+# This grants userns to that one binary only, mirroring the profiles Ubuntu
+# ships for chrome/code/etc. Installed by service/install.sh, which fills in
+# the placeholder below with the absolute repository path.
+
+abi <abi/4.0>,
+include <tunables/global>
+
+profile linapse-electron __REPO_DIR__/configurator/node_modules/electron/dist/electron flags=(unconfined) {
+  userns,
+
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/linapse-electron>
+}
