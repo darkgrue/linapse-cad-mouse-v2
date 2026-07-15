@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.27.0] - 2026-07-15
+
+### Added
+- **Configurator tray icon.** The Electron configurator now shows a persistent tray/taskbar icon while running. Closing the window hides it to the tray instead of quitting; a tray menu offers Open/Quit. A single-instance lock makes a second launch focus the existing window instead of opening a duplicate.
+
+### Fixed
+- **Configurator failed to launch on Ubuntu 24.04+.** The desktop shortcut silently did nothing because Ubuntu's unprivileged-userns restriction broke Electron's sandbox and the SUID fallback helper isn't root-owned by default. The installer now installs a scoped AppArmor profile granting the repo's Electron binary `userns`, matching Ubuntu's own profiles for Chrome/VS Code.
+- **Launcher shortcut and configurator systemd service used a stale path** after a home-directory rename, causing the configurator web UI to 404 and the launcher icon to not resolve. Both are now regenerated from their templates with the current path.
+
 ## [2.26.5] - 2026-06-25
 
 ### Fixed
