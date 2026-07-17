@@ -203,8 +203,16 @@ def press_button(idx):
 
 
 def release_button(idx):
+    # Never instantiate a pad just to release a button on it — releasing on a
+    # nonexistent pad is a no-op. The startup hold-release sweep in hid.py
+    # dispatches releases for every configured gamepad_button; creating a pad
+    # here would register a phantom controller (and repeatedly churn uinput
+    # device creation after every destroy()).
+    pad = _pad
+    if pad is None:
+        return
     try:
-        get_pad().release(idx)
+        pad.release(idx)
     except Exception as e:
         print(f"[gamepad] button {idx} release error: {e}")
 
