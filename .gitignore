@@ -8,6 +8,7 @@ AGENTS.md
 __pycache__/
 *.pyc
 .agents/
+build/
 node_modules/
 dist/
 extension/node_modules/
